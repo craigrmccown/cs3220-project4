@@ -15,15 +15,15 @@
 ; T4 is digit overflow value
 
 XOR		Zero,Zero,Zero
-ADDI	T0,Zero,Zero
+ADDI	T0,Zero,0
 ADDI	T1,Zero,1000
-SW		T1,0(TLIM)
+SW		T1,TLIM(Zero)
 SUBI	T1,T1,1
 
 ; Loop until 1 second has passed
 ClockLoop:
-SW		T0,0(HEX)
-LW		T2,0(TCNT)
+SW		T0,HEX(Zero)
+LW		T2,TCNT(Zero)
 BNE		T1,T2,ClockLoop
 ADDI	T0,T0,1
-JMP		ClockLoop
+JMP		ClockLoop(Zero)

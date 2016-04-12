@@ -17,13 +17,13 @@
 XOR		Zero,Zero,Zero
 ADDI	T0,Zero,0x235950
 ADDI	T1,Zero,1000
-SW		T1,0(TLIM)
+SW		T1,TLIM(Zero)
 SUBI	T1,T1,1
 
 ; Loop until 1 second has passed
 ClockLoop:
-SW		T0,0(HEX)
-LW		T2,0(TCNT)
+SW		T0,HEX(Zero)
+LW		T2,TCNT(Zero)
 BNE		T1,T2,ClockLoop
 
 IncClock:
@@ -32,7 +32,7 @@ ANDI	T3,T3,0x0000000F
 ADDI	T4,Zero,0x9
 BEQ		T3,T4,OverOne
 ADDI	T0,T0,0x1
-JMP		ClockLoop
+JMP		ClockLoop(Zero)
 
 OverOne:
 ADD		T3,T0,Zero
@@ -41,7 +41,7 @@ ADDI	T4,Zero,0x50
 BEQ		T3,T4,OverTwo
 ADDI	T0,T0,0x10
 ANDI	T0,T0,0xFFFFFFF0
-JMP		ClockLoop
+JMP		ClockLoop(Zero)
 
 OverTwo:
 ADD		T3,T0,Zero
@@ -50,7 +50,7 @@ ADDI	T4,Zero,0x900
 BEQ		T3,T4,OverThree
 ADDI	T0,T0,0x100
 ANDI	T0,T0,0xFFFFFF00
-JMP		ClockLoop
+JMP		ClockLoop(Zero)
 
 OverThree:
 ADD		T3,T0,Zero
@@ -59,7 +59,7 @@ ADDI	T4,Zero,0x5000
 BEQ		T3,T4,OverFour
 ADDI	T0,T0,0x1000
 ANDI	T0,T0,0xFFFFF000
-JMP		ClockLoop
+JMP		ClockLoop(Zero)
 
 OverFour:
 ADD		T3,T0,Zero
@@ -68,7 +68,7 @@ ADDI	T4,Zero,0x90000
 BEQ		T3,T4,OverFive
 ADDI	T0,T0,0x10000
 ANDI	T0,T0,0xFFFF0000
-JMP		ClockLoop
+JMP		ClockLoop(Zero)
 
 OverFive:
 ADD		T3,T0,Zero
@@ -77,12 +77,8 @@ ADDI	T4,Zero,0x200000
 BEQ		T3,T4,OverSix
 ADDI	T0,T0,0x100000
 ANDI	T0,T0,0xFFF00000
-JMP		ClockLoop
+JMP		ClockLoop(Zero)
 
 OverSix:
 ANDI	T0,T0,0xFF000000
-JMP		ClockLoop
-
-
-
-
+JMP		ClockLoop(Zero)
