@@ -1,0 +1,29 @@
+; Addresses for I/O
+.NAME	HEX = 0xFFFFF000
+.NAME	LEDR = 0xFFFFF020
+.NAME	KEY = 0xFFFFF080
+.NAME	SW = 0xFFFFF090
+.NAME	TCNT = 0xFFFFF100
+.NAME	TLIM = 0xFFFF0104
+
+.ORIG 0x100
+
+; T0 is clock value
+; T1 is timer limit
+; T2 is timer count
+; T3 is current digit
+; T4 is digit overflow value
+
+XOR		Zero,Zero,Zero
+ADDI	T0,Zero,Zero
+ADDI	T1,Zero,1000
+SW		T1,0(TLIM)
+SUBI	T1,T1,1
+
+; Loop until 1 second has passed
+ClockLoop:
+SW		T0,0(HEX)
+LW		T2,0(TCNT)
+BNE		T1,T2,ClockLoop
+ADDI	T0,T0,1
+JMP		ClockLoop
