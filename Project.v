@@ -22,6 +22,8 @@ module Project(
 	parameter ADDRLEDR = 32'hFFFFF020;
 	parameter ADDRKEY = 32'hFFFFF080;
 	parameter ADDRSW = 32'hFFFFF090;
+	parameter ADDRTLIM = 32'hFFFFF100;
+	parameter ADDRTCNT = 32'hFFFF0104;
 	parameter IMEMINITFILE = "Sorter3.mif";
 	parameter IMEMADDRBITS = 16;
 	parameter IMEMWORDBITS = 2;
@@ -461,6 +463,19 @@ module Project(
 		.IN(~KEY)
 	);
 	
-	// Connect memory and input devices to the bus
+	// Connect Timer device
+	DevTimer #(
+		.DBITS(DBITS),
+		.LIMADDR(ADDRTLIM),
+		.CNTADDR(ADDRTCNT)
+	) devTimer (
+		.CLK(clk),
+		.RESET(reset),
+		.ABUS(abus),
+		.DBUS(dbus),
+		.WE(we)
+	);
+	
+	// Connect memory
 	wire [(DBITS - 1) : 0] memout_M = MemEnable ? MemVal : dbus;
 endmodule
