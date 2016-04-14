@@ -26,4 +26,4 @@ SW		T1,HEX(Zero)
 LW		T2,TCNT(Zero)
 BNE		T1,T2,ClockLoop
 ADDI	T0,T0,1
-JMP		ClockLoop(Zero)
+BR      ClockLoop
