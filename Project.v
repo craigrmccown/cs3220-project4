@@ -24,7 +24,7 @@ module Project(
 	parameter ADDRSW = 32'hFFFFF090;
 	parameter ADDRTLIM = 32'hFFFFF100;
 	parameter ADDRTCNT = 32'hFFFF0104;
-	parameter IMEMINITFILE = "Sorter3.mif";
+	parameter IMEMINITFILE = "TimerTest.mif";
 	parameter IMEMADDRBITS = 16;
 	parameter IMEMWORDBITS = 2;
 	parameter IMEMWORDS = (1 << (IMEMADDRBITS - IMEMWORDBITS));
@@ -83,8 +83,7 @@ module Project(
 	);
 	
 	wire reset = !locked;
-	
-	/*
+		/*
 	reg clk;
 	reg reset;
 	reg hasticked;
@@ -255,7 +254,7 @@ module Project(
 		end
 	end
 	
-	// Instruction type selection -- move to decode
+	// Instruction type selection
 	wire iscomparison = ~alufunc_A[5];
 	wire [1 : 0] comparisonfunc = alufunc_A[1 : 0];
 	wire isbasecalc = ~alufunc_A[3];
@@ -375,6 +374,9 @@ module Project(
 			dmem[memaddr_M[(DMEMADDRBITS - 1) : DMEMWORDBITS]] <= wmemval_M;
 
 	wire [(DBITS - 1) : 0] MemVal = MemWE ? {DBITS{1'bX}} : dmem[memaddr_M[(DMEMADDRBITS - 1) : DMEMWORDBITS]];
+	
+	// Connect memory
+	wire [(DBITS - 1) : 0] memout_M = MemEnable ? MemVal : dbus;
 
 	// Decide what gets written into the destination register (wregval_M),
 	// when it gets written (wrreg_M) and to which register it gets written (wregno_M)
@@ -392,11 +394,13 @@ module Project(
 	
 	// Device bus
 	wire [(DBITS - 1) : 0] abus = memaddr_M;
-	tri [(DBITS - 1) : 0] dbus = wrmem_M ? wmemval_M : {DBITS{1'bz}};
+	tri [(DBITS - 1) : 0] dbus = wrmem_M ? wmemval_M : (dbusHEX | dbusLEDR | dbusSW | dbusKEY | dbusTimer);
 	wire we = wrmem_M;
 	
 	// Connect HEX device
 	wire [23 : 0] HexOut;
+	wire [(DBITS - 1) : 0] dbusHEX;
+	
 	SevenSeg ss5(.OUT(HEX5),.IN(HexOut[23 : 20]));
 	SevenSeg ss4(.OUT(HEX4),.IN(HexOut[19 : 16]));
 	SevenSeg ss3(.OUT(HEX3),.IN(HexOut[15 : 12]));
@@ -413,12 +417,15 @@ module Project(
 		.CLK(clk),
 		.RESET(reset),
 		.ABUS(abus),
-		.DBUS(dbus),
+		.DBUS_IN(dbus),
+		.DBUS_OUT(dbusHEX),
 		.WE(we),
-		.OUT(HexOut)
+		.VAL(HexOut)
 	);
 	
 	// Connect LEDR device
+	wire [(DBITS - 1) : 0] dbusLEDR;
+	
 	DevSimpleIO #(
 		.INIT(10'd0),
 		.DBITS(DBITS),
@@ -428,12 +435,15 @@ module Project(
 		.CLK(clk),
 		.RESET(reset),
 		.ABUS(abus),
-		.DBUS(dbus),
+		.DBUS_IN(dbus),
+		.DBUS_OUT(dbusLEDR),
 		.WE(we),
-		.OUT(LEDR)
+		.VAL(LEDR)
 	);
 	
 	// Connect SW device
+	wire [(DBITS - 1) : 0] dbusSW;
+	
 	DevReadonlyIO #(
 		.INIT(10'd0),
 		.DBITS(DBITS),
@@ -444,11 +454,13 @@ module Project(
 		.CLK(clk),
 		.RESET(reset),
 		.ABUS(abus),
-		.DBUS(dbus),
+		.DBUS_OUT(dbusSW),
 		.IN(SW)
 	);
 	
 	// Connect KEY device
+	wire [(DBITS - 1) : 0] dbusKEY;
+	
 	DevReadonlyIO #(
 		.INIT(4'd0),
 		.DBITS(DBITS),
@@ -459,23 +471,24 @@ module Project(
 		.CLK(clk),
 		.RESET(reset),
 		.ABUS(abus),
-		.DBUS(dbus),
+		.DBUS_OUT(dbusKEY),
 		.IN(~KEY)
 	);
 	
 	// Connect Timer device
+	wire [(DBITS - 1) : 0] dbusTimer;
+	
 	DevTimer #(
 		.DBITS(DBITS),
 		.LIMADDR(ADDRTLIM),
-		.CNTADDR(ADDRTCNT)
+		.CNTADDR(ADDRTCNT),
+		.MSTICKS(100000)
 	) devTimer (
 		.CLK(clk),
 		.RESET(reset),
 		.ABUS(abus),
-		.DBUS(dbus),
+		.DBUS_IN(dbus),
+		.DBUS_OUT(dbusTimer),
 		.WE(we)
 	);
-	
-	// Connect memory
-	wire [(DBITS - 1) : 0] memout_M = MemEnable ? MemVal : dbus;
 endmodule
