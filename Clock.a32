@@ -15,7 +15,7 @@
 ; T4 is digit overflow value
 
 XOR		Zero,Zero,Zero      ; Set Zero register to 0
-ADDI	T0,Zero,0x235950    ; Initialize clock vlue to 23:59:50
+ADDI	T0,Zero,0x235950    ; Initialize clock value to 23:59:50
 ADDI	T1,Zero,1000        ; Set timer limit to 1000
 SW		T1,TLIM(Zero)       ; Store 1000 as timer limit
 SUBI	T1,T1,1             ; Set timer limit to 999 for comparison

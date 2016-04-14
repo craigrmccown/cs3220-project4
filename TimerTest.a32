@@ -25,6 +25,13 @@ SW		T0,HEX(Zero)        ; Display 0 on HEX pins
 ClockLoop:
 LW		T2,TCNT(Zero)       ; Load current ms
 BNE		T1,T2,ClockLoop     ; Loop unless a second has passed
+CALL    WaitForReset(Zero)  ; Wait until clock resets
 ADDI	T0,T0,1             ; Increment clock value
 SW		T0,HEX(Zero)        ; Display clock value on HEX pins
 BR      ClockLoop           ; Loop unconditionally
+
+; Wait for timer to reset to 0
+WaitForReset:
+LW      T2,TCNT(Zero)           ; Load current ms
+BNE     T2,Zero,WaitForReset    ; Loop unless timer has reset 
+RET                             ; Return
