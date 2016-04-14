@@ -19,12 +19,11 @@ ADDI	T0,Zero,0
 ADDI	T1,Zero,1000
 SW		T1,TLIM(Zero)
 SUBI	T1,T1,1
-SW		Zero,HEX(Zero)
 
 ; Loop until 1 second has passed
 ClockLoop:
 LW		T2,TCNT(Zero)
+SW		T2,HEX(Zero)
 BNE		T1,T2,ClockLoop
 ADDI	T0,T0,1
-SW		T0,HEX(Zero)
 BR      ClockLoop
