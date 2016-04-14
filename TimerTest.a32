@@ -33,5 +33,6 @@ BR      ClockLoop           ; Loop unconditionally
 ; Wait for timer to reset to 0
 WaitForReset:
 LW      T2,TCNT(Zero)           ; Load current ms
+SW		T2,HEX(Zero)            ; Display clock value on HEX pins
 BNE     T2,Zero,WaitForReset    ; Loop unless timer has reset 
 RET                             ; Return
