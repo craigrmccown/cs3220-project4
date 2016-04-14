@@ -14,35 +14,38 @@
 ; T3 is current digit
 ; T4 is digit overflow value
 
-XOR		Zero,Zero,Zero
-ADDI	T0,Zero,0x235950
-ADDI	T1,Zero,1000
-SW		T1,TLIM(Zero)
-SUBI	T1,T1,1
+XOR		Zero,Zero,Zero      ; Set Zero register to 0
+ADDI	T0,Zero,0x235950    ; Initialize clock vlue to 23:59:50
+ADDI	T1,Zero,1000        ; Set timer limit to 1000
+SW		T1,TLIM(Zero)       ; Store 1000 as timer limit
+SUBI	T1,T1,1             ; Set timer limit to 999 for comparison
 
 ; Loop until 1 second has passed
 ClockLoop:
-SW		T0,HEX(Zero)
-LW		T2,TCNT(Zero)
-BNE		T1,T2,ClockLoop
+SW		T0,HEX(Zero)        ; Display clock value on HEX pins
+LW		T2,TCNT(Zero)       ; Load current ms
+BNE		T1,T2,ClockLoop     ; Loop unless a second has passed
 
+; Increments clock value
 IncClock:
-ADD		T3,T0,Zero
-ANDI	T3,T3,0x0000000F
-ADDI	T4,Zero,0x9
-BEQ		T3,T4,OverOne
-ADDI	T0,T0,0x1
-JMP		ClockLoop(Zero)
+ADD		T3,T0,Zero          ; Set current digit to clock value
+ANDI	T3,T3,0x0000000F    ; Mask to get least significant digit
+ADDI	T4,Zero,0x9         ; Set digit overflow to 9
+BEQ		T3,T4,OverOne       ; Go to OverOne if overflow is detected
+ADDI	T0,T0,0x1           ; If no overflow, increment clock value
+BR      ClockLoop           ; Loop unconditionally
 
+; OverXXX handles clock overflow for each digit
 OverOne:
-ADD		T3,T0,Zero
-ANDI	T3,T3,0x000000F0
-ADDI	T4,Zero,0x50
-BEQ		T3,T4,OverTwo
-ADDI	T0,T0,0x10
-ANDI	T0,T0,0xFFFFFFF0
-JMP		ClockLoop(Zero)
+ADD		T3,T0,Zero          ; Set current digit to clock value
+ANDI	T3,T3,0x000000F0    ; Mask to get second least significant digit
+ADDI	T4,Zero,0x50        ; Set digit overflow to 0x50
+BEQ		T3,T4,OverTwo       ; Go to OverTwo if overflow is detected
+ADDI	T0,T0,0x10          ; If no overflow, increment clock value by 0x10
+ANDI	T0,T0,0xFFFFFFF0    ; Set least significant digit to 0
+BR      ClockLoop           ; Loop unconditionally
 
+; The rest of the OverXXX sections follow the same pattern
 OverTwo:
 ADD		T3,T0,Zero
 ANDI	T3,T3,0x00000F00
@@ -50,7 +53,7 @@ ADDI	T4,Zero,0x900
 BEQ		T3,T4,OverThree
 ADDI	T0,T0,0x100
 ANDI	T0,T0,0xFFFFFF00
-JMP		ClockLoop(Zero)
+BR      ClockLoop
 
 OverThree:
 ADD		T3,T0,Zero
@@ -59,7 +62,7 @@ ADDI	T4,Zero,0x5000
 BEQ		T3,T4,OverFour
 ADDI	T0,T0,0x1000
 ANDI	T0,T0,0xFFFFF000
-JMP		ClockLoop(Zero)
+BR      ClockLoop
 
 OverFour:
 ADD		T3,T0,Zero
@@ -68,7 +71,7 @@ ADDI	T4,Zero,0x90000
 BEQ		T3,T4,OverFive
 ADDI	T0,T0,0x10000
 ANDI	T0,T0,0xFFFF0000
-JMP		ClockLoop(Zero)
+BR      ClockLoop
 
 OverFive:
 ADD		T3,T0,Zero
@@ -77,8 +80,8 @@ ADDI	T4,Zero,0x200000
 BEQ		T3,T4,OverSix
 ADDI	T0,T0,0x100000
 ANDI	T0,T0,0xFFF00000
-JMP		ClockLoop(Zero)
+BR      ClockLoop
 
 OverSix:
 ANDI	T0,T0,0xFF000000
-JMP		ClockLoop(Zero)
+BR      ClockLoop

@@ -14,16 +14,17 @@
 ; T3 is current digit
 ; T4 is digit overflow value
 
-XOR		Zero,Zero,Zero
-ADDI	T0,Zero,0
-ADDI	T1,Zero,1000
-SW		T1,TLIM(Zero)
-SUBI	T1,T1,1
+XOR		Zero,Zero,Zero      ; Set Zero register to 0
+XOR     T0,T0,T0            ; Set current clock value to 0
+ADDI	T1,Zero,1000        ; Set timer limit to 1000
+SW		T1,TLIM(Zero)       ; Store 1000 as the timer limit
+SUBI	T1,T1,1             ; Set timer limit to 999 for comparison
+SW		T0,HEX(Zero)        ; Display 0 on HEX pins
 
 ; Loop until 1 second has passed
 ClockLoop:
-LW		T2,TCNT(Zero)
-SW		T2,HEX(Zero)
-BNE		T1,T2,ClockLoop
-ADDI	T0,T0,1
-BR      ClockLoop
+LW		T2,TCNT(Zero)       ; Load current ms
+BNE		T1,T2,ClockLoop     ; Loop unless a second has passed
+ADDI	T0,T0,1             ; Increment clock value
+SW		T0,HEX(Zero)        ; Display clock value on HEX pins
+BR      ClockLoop           ; Loop unconditionally
