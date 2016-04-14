@@ -1,4 +1,4 @@
-module DevReadonlyIO(CLK, RESET, ABUS, DBUS, IN);
+module DevReadonlyIO(CLK, RESET, ABUS, DBUS_OUT, IN);
 	parameter DBITS;
 	parameter IOBITS;
 	parameter DEVADDR;
@@ -7,8 +7,8 @@ module DevReadonlyIO(CLK, RESET, ABUS, DBUS, IN);
 	
 	input CLK, RESET;
 	input [(DBITS - 1) : 0] ABUS;
-	inout [(DBITS - 1) : 0] DBUS;
 	input [(IOBITS - 1) : 0] IN;
+	output [(DBITS - 1) : 0] DBUS_OUT;
 	
 	wire doRead = ABUS == DEVADDR;
 	wire [(IOBITS - 1) : 0] debounced;
@@ -28,5 +28,5 @@ module DevReadonlyIO(CLK, RESET, ABUS, DBUS, IN);
 	always @(debounced)
 		out <= debounced;
 		
-	assign DBUS = doRead ? {{(DBITS - IOBITS){1'b0}}, out} : {DBITS{1'bz}};
+	assign DBUS_OUT = doRead ? {{(DBITS - IOBITS){1'b0}}, out} : {DBITS{1'b0}};
 endmodule

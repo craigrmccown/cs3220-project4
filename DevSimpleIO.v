@@ -1,4 +1,4 @@
-module DevSimpleIO(CLK, RESET, ABUS, DBUS, WE, OUT);
+module DevSimpleIO(CLK, RESET, ABUS, DBUS_IN, DBUS_OUT, WE, VAL);
 	parameter DBITS;
 	parameter IOBITS;
 	parameter DEVADDR;
@@ -6,20 +6,21 @@ module DevSimpleIO(CLK, RESET, ABUS, DBUS, WE, OUT);
 	
 	input CLK, RESET, WE;
 	input [(DBITS - 1) : 0] ABUS;
-	inout [(DBITS - 1) : 0] DBUS;
-	output [(IOBITS - 1) : 0] OUT;
+	input [(DBITS - 1) : 0] DBUS_IN;
+	output [(DBITS - 1) : 0] DBUS_OUT;
+	output [(IOBITS - 1) : 0] VAL;
 	
-	reg [(IOBITS - 1) : 0] out;
+	reg [(IOBITS - 1) : 0] val;
 	wire active = ABUS == DEVADDR;
 	wire doRead = !WE && active;
 	wire doWrite = WE && active;
 	
 	always @(posedge CLK or posedge RESET)
 		if (RESET)
-			out <= INIT;
+			val <= INIT;
 		else if (doWrite)
-			out <= DBUS[(IOBITS - 1) : 0];
+			val <= DBUS_IN[(IOBITS - 1) : 0];
 		
-	assign DBUS = doRead ? {{(DBITS - IOBITS){1'b0}}, out} : {DBITS{1'bz}};
-	assign OUT = out;
+	assign DBUS_OUT = doRead ? {{(DBITS - IOBITS){1'b0}}, val} : {DBITS{1'b0}};
+	assign VAL = val;
 endmodule
