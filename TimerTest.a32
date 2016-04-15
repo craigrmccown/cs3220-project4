@@ -33,7 +33,5 @@ BR      ClockLoop           ; Loop unconditionally
 ; Wait for timer to reset to 0
 WaitForReset:
 LW      T2,TCNT(Zero)           ; Load current ms
-LW      T5,TLIM(Zero)           ; temp
-SW		T5,HEX(Zero)            ; temp
 BNE     T2,Zero,WaitForReset    ; Loop unless timer has reset 
 RET                             ; Return
