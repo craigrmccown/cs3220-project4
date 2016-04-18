@@ -1,0 +1,6 @@
+*
+!*.v
+!*.a32
+!*.mif
+!*.sdc
+!.gitignore
