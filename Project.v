@@ -22,8 +22,9 @@ module Project(
 	parameter ADDRLEDR = 32'hFFFFF020;
 	parameter ADDRKEY = 32'hFFFFF080;
 	parameter ADDRSW = 32'hFFFFF090;
-	parameter ADDRTLIM = 32'hFFFFF100;
-	parameter ADDRTCNT = 32'hFFFF0104;
+	parameter ADDRTCNT = 32'hFFFFF100;
+	parameter ADDRTLIM = 32'hFFFF0104;
+	parameter ADDRTCTRL = 32'hFFFF0108;
 	parameter IMEMINITFILE = "TimerTest.mif";
 	parameter IMEMADDRBITS = 16;
 	parameter IMEMWORDBITS = 2;
@@ -394,7 +395,7 @@ module Project(
 	
 	// Device bus
 	wire [(DBITS - 1) : 0] abus = memaddr_M;
-	tri [(DBITS - 1) : 0] dbus = wrmem_M ? wmemval_M : (dbusHEX | dbusLEDR | dbusSW | dbusKEY | dbusTimer);
+	wire [(DBITS - 1) : 0] dbus = wrmem_M ? wmemval_M : (dbusHEX | dbusLEDR | dbusSW | dbusKEY | dbusTimer);
 	wire we = wrmem_M;
 	
 	// Connect HEX device
@@ -482,6 +483,7 @@ module Project(
 		.DBITS(DBITS),
 		.LIMADDR(ADDRTLIM),
 		.CNTADDR(ADDRTCNT),
+		.CTRLADDR(ADDRTCTRL),
 		.MSTICKS(100000)
 	) devTimer (
 		.CLK(clk),
