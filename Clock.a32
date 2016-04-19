@@ -5,26 +5,32 @@
 .NAME	SW = 0xFFFFF090
 .NAME	TCNT = 0xFFFFF100
 .NAME	TLIM = 0xFFFF0104
+.NAME	TCTRL= 0xFFFF0108
 
 .ORIG 0x100
 
 ; T0 is clock value
 ; T1 is timer limit
-; T2 is timer count
+; T2 is device addresses
 ; T3 is current digit
 ; T4 is digit overflow value
+; T5 is timer control bits
 
 XOR		Zero,Zero,Zero      ; Set Zero register to 0
-ADDI	T0,Zero,0x235950    ; Initialize clock value to 23:59:50
+XOR     T0,T0,T0            ; Set current clock value to 0
+SW		T0,HEX(Zero)        ; Display 0 on HEX pins
+LW      T2,TLimAddr(Zero)   ; Load timer limit address
 ADDI	T1,Zero,1000        ; Set timer limit to 1000
-SW		T1,TLIM(Zero)       ; Store 1000 as timer limit
-SUBI	T1,T1,1             ; Set timer limit to 999 for comparison
+SW		T1,0(T2)            ; Store 1000 as the timer limit
+LW      T2,TCtrlAddr(Zero)  ; Load timer control address
 
 ; Loop until 1 second has passed
 ClockLoop:
+LW		T5,0(T2)            ; Load current ms
+BEQ		T5,T0,ClockLoop     ; Loop unless a second has passed
+CALL    IncClock(Zero)      ; Increment clock every second
 SW		T0,HEX(Zero)        ; Display clock value on HEX pins
-LW		T2,TCNT(Zero)       ; Load current ms
-BNE		T1,T2,ClockLoop     ; Loop unless a second has passed
+BR      ClockLoop           ; Loop forever
 
 ; Increments clock value
 IncClock:
@@ -33,7 +39,7 @@ ANDI	T3,T3,0x0000000F    ; Mask to get least significant digit
 ADDI	T4,Zero,0x9         ; Set digit overflow to 9
 BEQ		T3,T4,OverOne       ; Go to OverOne if overflow is detected
 ADDI	T0,T0,0x1           ; If no overflow, increment clock value
-BR      ClockLoop           ; Loop unconditionally
+RET
 
 ; OverXXX handles clock overflow for each digit
 OverOne:
@@ -43,7 +49,7 @@ ADDI	T4,Zero,0x50        ; Set digit overflow to 0x50
 BEQ		T3,T4,OverTwo       ; Go to OverTwo if overflow is detected
 ADDI	T0,T0,0x10          ; If no overflow, increment clock value by 0x10
 ANDI	T0,T0,0xFFFFFFF0    ; Set least significant digit to 0
-BR      ClockLoop           ; Loop unconditionally
+RET
 
 ; The rest of the OverXXX sections follow the same pattern
 OverTwo:
@@ -53,7 +59,7 @@ ADDI	T4,Zero,0x900
 BEQ		T3,T4,OverThree
 ADDI	T0,T0,0x100
 ANDI	T0,T0,0xFFFFFF00
-BR      ClockLoop
+RET
 
 OverThree:
 ADD		T3,T0,Zero
@@ -62,26 +68,35 @@ ADDI	T4,Zero,0x5000
 BEQ		T3,T4,OverFour
 ADDI	T0,T0,0x1000
 ANDI	T0,T0,0xFFFFF000
-BR      ClockLoop
+RET
 
+; First check if hours have reached 23, then check if
+; the fifth digit has overflowed
 OverFour:
 ADD		T3,T0,Zero
-ANDI	T3,T3,0x000F0000
+ANDI    T3,T3,0x00FF0000
+ADDI    T4,Zero,0x230000
+BEQ     T3,T4,Rollover
+ANDI	T3,T3,0x000F0000 
 ADDI	T4,Zero,0x90000
 BEQ		T3,T4,OverFive
 ADDI	T0,T0,0x10000
 ANDI	T0,T0,0xFFFF0000
-BR      ClockLoop
+RET
 
+; Just increment the sixth digit
 OverFive:
-ADD		T3,T0,Zero
-ANDI	T3,T3,0x00F00000
-ADDI	T4,Zero,0x200000
-BEQ		T3,T4,OverSix
 ADDI	T0,T0,0x100000
 ANDI	T0,T0,0xFFF00000
-BR      ClockLoop
+RET
 
-OverSix:
+; Roll back over to 0
+Rollover:
 ANDI	T0,T0,0xFF000000
-BR      ClockLoop
+RET
+
+TLimAddr:
+.WORD TLIM
+
+TCtrlAddr:
+.WORD TCTRL
