@@ -19,6 +19,7 @@
 XOR		Zero,Zero,Zero      ; Set Zero register to 0
 XOR     T0,T0,T0            ; Set current clock value to 0
 ADDI	T1,Zero,1000        ; Set timer limit to 1000
+SW      Zero,TCTRL(Zero)    ; Store 0 in timer control register
 SW		T1,TLIM(Zero)       ; Store 1000 as the timer limit
 SW		T0,HEX(Zero)        ; Display 0 on HEX pins
 
