@@ -26,7 +26,7 @@ SW		T0,HEX(Zero)        ; Display 0 on HEX pins
 ClockLoop:
 LW      T3,TCTRL(Zero)      ; Load control bits
 BEQ		T3,Zero,ClockLoop   ; Loop unless a second has passed
-LW      T5,TCTRL(Zero)      ; temp
-SW		T5,HEX(Zero)        ; temp
 SW      Zero,TCTRL(Zero)    ; Set ready bit to 0
+ADDI	T0,T0,1             ; Increment clock value
+SW		T0,HEX(Zero)        ; Display clock value on HEX pins
 BR      ClockLoop           ; Loop unconditionally
