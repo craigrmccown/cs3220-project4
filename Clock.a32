@@ -12,32 +12,36 @@
 
 ; Set initial register values
 ;
-; T0 is clock value
-; T1 is timer device addresses
-; T2 is timer limit
+; T0 is seconds
+; T1 is minutes
+; T2 is hours
+; T3 is device addresses
+; T4 is timer limit
 Init:
 XOR		Zero,Zero,Zero          ; Set Zero register to 0
 ADDI    T0,Zero,0x50            ; Set seconds to 50
 ADDI    T1,Zero,0x59            ; Set minutes to 59
 ADDI    T2,Zero,0x23            ; Set hours to 23
 CALL    DisplayClock(Zero)      ; Display clock value
-LW      T1,TLimAddr(Zero)       ; Load timer limit address
-ADDI	T2,Zero,1000            ; Set timer limit to 1000
-SW		T2,0(T1)                ; Store 1000 as the timer limit
-LW      T1,TCtrlAddr(Zero)      ; Load timer control address
+LW      T3,TLimAddr(Zero)       ; Load timer limit address
+ADDI	T4,Zero,1000            ; Set timer limit to 1000
+SW		T4,0(T3)                ; Store 1000 as the timer limit
+LW      T3,TCtrlAddr(Zero)      ; Load timer control address
 
 ; Main clock loop
 ;
-; T0 is clock value
-; T1 is timer control address
-; T2 is timer control value
+; T0 is seconds
+; T1 is minutes
+; T2 is hours
+; T3 is timer control address
+; T4 is timer control value
 ClockLoop:
-LW		T2,0(T1)                ; Load current timer control bits
-BEQ		T2,Zero,ClockLoop       ; Loop unless a second has passed
+LW		T4,0(T3)                ; Load current timer control bits
+BEQ		T4,Zero,ClockLoop       ; Loop unless a second has passed
 CALL    IncClock(Zero)          ; Increment clock every second
 CALL    DisplayClock(Zero)      ; Display clock value
-LW      T1,TCtrlAddr(Zero)      ; Load timer control address
-SW      Zero,0(T1)              ; Clear ready bit
+LW      T3,TCtrlAddr(Zero)      ; Load timer control address
+SW      Zero,0(T3)              ; Clear ready bit
 BR      ClockLoop               ; Loop forever
 
 ; Displays the current time on the HEX display
