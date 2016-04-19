@@ -9,28 +9,26 @@
 
 .ORIG 0x100
 
-; T0 is clock value
-; T1 is timer limit
-; T2 is timer count
-; T3 is timer control
-; T4 is current digit
-; T5 is digit overflow value
-
+Init:
 XOR		Zero,Zero,Zero      ; Set Zero register to 0
 XOR     T0,T0,T0            ; Set current clock value to 0
-ADDI	T1,Zero,1000        ; Set timer limit to 1000
-SW      Zero,TCTRL(Zero)    ; Store 0 in timer control register
-SW		T1,TLIM(Zero)       ; Store 1000 as the timer limit
 SW		T0,HEX(Zero)        ; Display 0 on HEX pins
+LW      T2,TLimAddr(Zero)   ; Load timer limit address
+ADDI	T1,Zero,1000        ; Set timer limit to 1000
+SW		T1,0(T2)            ; Store 1000 as the timer limit
+LW      T2,TCtrlAddr(Zero)  ; Load timer control address
 
 ; Loop until 1 second has passed
 ClockLoop:
-LW      T0,TCTRL(Zero)       ; temp
-SW      T0,HEX(Zero)        ; temp
-LW      T3,TCTRL(Zero)      ; Load control bits
-BEQ		T3,Zero,ClockLoop   ; Loop unless a second has passed
-ADDI    T5,Zero,0xdeadbeef
-SW      T5,HEX(Zero)
+LW      T1,0(T2)            ; Load timer control bits
+BEQ		T1,Zero,ClockLoop   ; Loop unless a second has passed
+SW      Zero,0(T2)          ; Store 0 in timer control register
+ADDI    T0,T0,1             ; Increment clock value
+SW		T0,HEX(Zero)        ; Display 0 on HEX pins
+BR      ClockLoop           ; Loop
 
-Infinity:
-BR Infinity
+TLimAddr:
+.WORD TLIM
+
+TCtrlAddr:
+.WORD TCTRL
