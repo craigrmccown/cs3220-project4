@@ -49,18 +49,18 @@ BR      ClockLoop               ; Loop forever
 ; T0 is seconds
 ; T1 is minutes
 ; T2 is hours
-; T3 is clock address
-; T4 is clock value
+; T3 is shifted minutes
+; T4 is shifted hours
+; T5 is clock value
 DisplayClock:
-LW      T3,ClockValAddr(Zero)   ; Load clock address
-SW      T0,0(T3)                ; Store seconds
-SUBI    T3,T3,1                 ; Move 1 byte backwards
-SW      T1,0(T3)                ; Store minutes
-SUBI    T3,T3,1                 ; Move 1 byte backwards
-SW      T2,0(T3)                ; Store hours
-ADDI    T3,T3,2                 ; Move 2 bytes forwards
-LW      T4,0(T3)                ; Load clock value
-SW      T4,HEX(Zero)            ; Display clock value on HEX pins
+ADD     T3,T1,T1                ; Shifted minutes = minutes x 2
+ADD     T3,T3,T3                ; Shifted minutes = minutes x 4
+ADD     T4,T2,T2                ; Shifted hours = hours x 2
+ADD     T4,T4,T4                ; Shifted hours = hours x 4 
+ADD     T4,T4,T4                ; Shifted hours = hours x 8
+OR      T5,T0,T3                ; Clock value contains seconds and minutes
+OR      T5,T5,T4                ; Clock value contains seconds, minutes, and hours
+SW      T5,HEX(Zero)            ; Display the clock value on the HEX pins
 RET
 
 ; Increments clock value
@@ -106,7 +106,7 @@ XOR     T1,T1,T1                ; Clear minutes
 ADDI    T3,Zero,0x23            ; Set overflow value to 23
 BEQ     T3,T2,Rollover          ; Go to Rollover if there are 23 hours
 ADDI    T3,Zero,0x9             ; Set overflow value to 9
-ADD     T4,Zero,T1              ; Set current digit to hours
+ADD     T4,Zero,T2              ; Set current digit to hours
 ANDI    T4,T4,0xF               ; Mask to get least significant digit
 BEQ     T3,T4,HourOverflow      ; Go to HourOverflow if the least significant digit is 9
 ADDI    T2,T2,1                 ; Otherwise, increment hours
