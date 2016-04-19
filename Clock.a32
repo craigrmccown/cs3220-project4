@@ -32,6 +32,7 @@ ClockLoop:
 LW		T2,0(T1)                ; Load current timer control bits
 BEQ		T2,Zero,ClockLoop       ; Loop unless a second has passed
 CALL    IncClock(Zero)          ; Increment clock every second
+LW      T1,TCtrlAddr(Zero)      ; Load timer control address
 SW      Zero,0(T1)              ; Clear ready bit
 SW		T0,HEX(Zero)            ; Display clock value on HEX pins
 BR      ClockLoop               ; Loop forever
@@ -122,8 +123,7 @@ RET
 ;
 ; T0 is clock value
 Rollover:
-;XOR     T0,T0,T0
-ADDI    T0,Zero,0x100
+XOR     T0,T0,T0
 RET
 
 ; Static data
