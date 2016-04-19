@@ -51,8 +51,8 @@ BR      ClockLoop               ; Loop forever
 ; SP is stack pointer
 ; RA is return address
 Return:
-SUBI    SP,SP,4                 ; Pop stack
 LW      RA,0(SP)                ; Load previous return address
+SUBI    SP,SP,4                 ; Pop stack
 RET
 
 ; Displays the current time on the HEX display
@@ -63,16 +63,21 @@ RET
 ; T3 is shifted values
 ; T4 is clock value
 DisplayClock:
-SW      RA,0(SP)                ; Store return address
 ADDI    SP,SP,4                 ; Push stack
+SW      RA,0(SP)                ; Store return address
 ADD     T3,T1,Zero              ; Set shifted value to minutes
 CALL    ByteShift(Zero)         ; Left shift 8 bits
+XOR     T4,T4,T4                ; Set clock value to 0
 OR      T4,T0,T3                ; Clock value holds seconds and minutes
+ADDI    SP,SP,4                 ; Push stack
+SW      T4,0(SP)                ; Store partial result on stack
 ADD     T3,T2,Zero              ; Set shifted value to hours
 CALL    ByteShift(Zero)         ; Left shift 8 bits
 CALL    ByteShift(Zero)         ; Left shift 8 more bits
+LW      T4,0(SP)                ; Load partial result from stack
+SUBI    SP,SP,1                 ; Pop stack
 OR      T4,T4,T3                ; Clock value holds seconds, minutes, and hours
-SW      T5,HEX(Zero)            ; Display the clock value on the HEX pins
+SW      T4,HEX(Zero)            ; Display the clock value on the HEX pins
 BR      Return
 
 ; Shifts a value up one byte
@@ -83,8 +88,8 @@ BR      Return
 ; T3 is unshifted value
 ; T4 is loop counter
 ByteShift:
-SW      RA,0(SP)                ; Store return address
 ADDI    SP,SP,4                 ; Push stack
+SW      RA,0(SP)                ; Store return address
 ADDI    T4,Zero,8               ; Set loop counter to 8
 
 ByteShiftLoop:
@@ -101,8 +106,8 @@ BR      Return
 ; T3 is overflow value
 ; T4 is current digit
 IncClock:
-SW      RA,0(SP)                ; Store return address
 ADDI    SP,SP,4                 ; Push stack
+SW      RA,0(SP)                ; Store return address
 ADDI    T3,Zero,0x59            ; Set overflow value to 59
 BEQ     T3,T0,IncMin            ; Go to IncMin if there are 59 seconds
 ADDI    T3,Zero,0x9             ; Set overflow value to 9
