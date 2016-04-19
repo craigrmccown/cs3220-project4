@@ -9,94 +9,124 @@
 
 .ORIG 0x100
 
+; Set initial register values
+;
 ; T0 is clock value
-; T1 is timer limit
-; T2 is device addresses
-; T3 is current digit
-; T4 is digit overflow value
-; T5 is timer control bits
-
+; T1 is timer device addresses
+; T2 is timer limit
+Init:
 XOR		Zero,Zero,Zero      ; Set Zero register to 0
-XOR     T0,T0,T0            ; Set current clock value to 0
+ADDI    T0,Zero,0x235950    ; Set initial clock value to 23:59:50
 SW		T0,HEX(Zero)        ; Display 0 on HEX pins
-LW      T2,TLimAddr(Zero)   ; Load timer limit address
-ADDI	T1,Zero,1000        ; Set timer limit to 1000
-SW		T1,0(T2)            ; Store 1000 as the timer limit
-LW      T2,TCtrlAddr(Zero)  ; Load timer control address
+LW      T1,TLimAddr(Zero)   ; Load timer limit address
+ADDI	T2,Zero,1000        ; Set timer limit to 1000
+SW		T2,0(T1)            ; Store 1000 as the timer limit
+LW      T1,TCtrlAddr(Zero)  ; Load timer control address
 
-; Loop until 1 second has passed
+; Main clock loop
+;
+; T0 is clock value
+; T1 is timer control address
+; T2 is timer control value
 ClockLoop:
-LW		T5,0(T2)            ; Load current ms
-BEQ		T5,T0,ClockLoop     ; Loop unless a second has passed
+LW		T2,0(T1)            ; Load current timer control bits
+BEQ		T2,T0,ClockLoop     ; Loop unless a second has passed
 CALL    IncClock(Zero)      ; Increment clock every second
+SW      Zero,0(T1)          ; Clear ready bit
 SW		T0,HEX(Zero)        ; Display clock value on HEX pins
 BR      ClockLoop           ; Loop forever
 
 ; Increments clock value
+;
+; T0 is clock value
+; T1 is current digit
+; T2 is overflow value
 IncClock:
-ADD		T3,T0,Zero          ; Set current digit to clock value
-ANDI	T3,T3,0x0000000F    ; Mask to get least significant digit
-ADDI	T4,Zero,0x9         ; Set digit overflow to 9
-BEQ		T3,T4,OverOne       ; Go to OverOne if overflow is detected
+ADD		T1,T0,Zero          ; Set current digit to clock value
+ANDI	T1,T1,0x0000000F    ; Mask to get least significant digit
+ADDI	T2,Zero,0x9         ; Set digit overflow to 9
+BEQ		T1,T2,OverOne       ; Go to OverOne if overflow is detected
 ADDI	T0,T0,0x1           ; If no overflow, increment clock value
 RET
 
-; OverXXX handles clock overflow for each digit
+; Handles digit 1 overflow
+;
+; T0 is clock value
+; T1 is current digit
+; T2 is overflow value
 OverOne:
-ADD		T3,T0,Zero          ; Set current digit to clock value
-ANDI	T3,T3,0x000000F0    ; Mask to get second least significant digit
-ADDI	T4,Zero,0x50        ; Set digit overflow to 0x50
-BEQ		T3,T4,OverTwo       ; Go to OverTwo if overflow is detected
+ADD		T1,T0,Zero          ; Set current digit to clock value
+ANDI	T1,T1,0x000000F0    ; Mask to get second least significant digit
+ADDI	T2,Zero,0x50        ; Set digit overflow to 0x50
+BEQ		T1,T2,OverTwo       ; Go to OverTwo if overflow is detected
 ADDI	T0,T0,0x10          ; If no overflow, increment clock value by 0x10
 ANDI	T0,T0,0xFFFFFFF0    ; Set least significant digit to 0
 RET
 
-; The rest of the OverXXX sections follow the same pattern
+; Handles digit 2 overflow
+;
+; T0 is clock value
+; T1 is current digit
+; T2 is overflow value
 OverTwo:
-ADD		T3,T0,Zero
-ANDI	T3,T3,0x00000F00
-ADDI	T4,Zero,0x900
-BEQ		T3,T4,OverThree
+ADD		T1,T0,Zero
+ANDI	T1,T1,0x00000F00
+ADDI	T2,Zero,0x900
+BEQ		T1,T2,OverThree
 ADDI	T0,T0,0x100
 ANDI	T0,T0,0xFFFFFF00
 RET
 
+; Handles digit 3 overflow
+;
+; T0 is clock value
+; T1 is current digit
+; T2 is overflow value
 OverThree:
-ADD		T3,T0,Zero
-ANDI	T3,T3,0x0000F000
-ADDI	T4,Zero,0x5000
-BEQ		T3,T4,OverFour
+ADD		T1,T0,Zero
+ANDI	T1,T1,0x0000F000
+ADDI	T2,Zero,0x5000
+BEQ		T1,T2,OverFour
 ADDI	T0,T0,0x1000
 ANDI	T0,T0,0xFFFFF000
 RET
 
-; First check if hours have reached 23, then check if
-; the fifth digit has overflowed
+; Handles digit 4 overflow. First, check if the hours have reached
+; 23. Then, check if digit 5 has reached 9.
+;
+; T0 is clock value
+; T1 is current digit
+; T2 is overflow value
 OverFour:
-ADD		T3,T0,Zero
-ANDI    T3,T3,0x00FF0000
-ADDI    T4,Zero,0x230000
-BEQ     T3,T4,Rollover
-ANDI	T3,T3,0x000F0000 
-ADDI	T4,Zero,0x90000
-BEQ		T3,T4,OverFive
+ADD		T1,T0,Zero
+ANDI    T1,T1,0x00FF0000
+ADDI    T2,Zero,0x230000
+BEQ     T1,T2,Rollover
+ANDI	T1,T1,0x000F0000 
+ADDI	T2,Zero,0x90000
+BEQ		T1,T2,OverFive
 ADDI	T0,T0,0x10000
 ANDI	T0,T0,0xFFFF0000
 RET
 
-; Just increment the sixth digit
+; Handles digit 5 overflow by simply incrementing digit 6 and zeroing
+; out the least significant 5 digits
+;
+; T0 is clock value
 OverFive:
 ADDI	T0,T0,0x100000
 ANDI	T0,T0,0xFFF00000
 RET
 
-; Roll back over to 0
+; Resets the clock value to 0
+;
+; T0 is clock value
 Rollover:
-ANDI	T0,T0,0xFF000000
+XOR     T0,T0,T0
 RET
 
+; Static data
 TLimAddr:
 .WORD TLIM
-
 TCtrlAddr:
 .WORD TCTRL
