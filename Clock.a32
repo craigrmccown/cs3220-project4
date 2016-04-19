@@ -35,9 +35,9 @@ ClockLoop:
 LW		T2,0(T1)                ; Load current timer control bits
 BEQ		T2,Zero,ClockLoop       ; Loop unless a second has passed
 CALL    IncClock(Zero)          ; Increment clock every second
+CALL    DisplayClock(Zero)      ; Display clock value
 LW      T1,TCtrlAddr(Zero)      ; Load timer control address
 SW      Zero,0(T1)              ; Clear ready bit
-CALL    DisplayClock(Zero)      ; Display clock value
 BR      ClockLoop               ; Loop forever
 
 ; Displays the current time on the HEX display
@@ -49,12 +49,12 @@ BR      ClockLoop               ; Loop forever
 ; T4 is clock value
 DisplayClock:
 LW      T3,ClockValAddr(Zero)   ; Load clock address
-ADDI    T3,T3,2                 ; Move 2 bytes forwards
 SW      T0,0(T3)                ; Store seconds
 SUBI    T3,T3,1                 ; Move 1 byte backwards
 SW      T1,0(T3)                ; Store minutes
 SUBI    T3,T3,1                 ; Move 1 byte backwards
 SW      T2,0(T3)                ; Store hours
+ADDI    T3,T3,2                 ; Move 2 bytes forwards
 LW      T4,0(T3)                ; Load clock value
 SW      T4,HEX(Zero)            ; Display clock value on HEX pins
 RET
