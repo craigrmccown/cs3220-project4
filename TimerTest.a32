@@ -5,33 +5,28 @@
 .NAME	SW = 0xFFFFF090
 .NAME	TCNT = 0xFFFFF100
 .NAME	TLIM = 0xFFFF0104
+.NAME	TCTRL = 0xFFFF0108
 
 .ORIG 0x100
 
 ; T0 is clock value
 ; T1 is timer limit
 ; T2 is timer count
-; T3 is current digit
-; T4 is digit overflow value
+; T3 is timer control
+; T4 is current digit
+; T5 is digit overflow value
 
 XOR		Zero,Zero,Zero      ; Set Zero register to 0
 XOR     T0,T0,T0            ; Set current clock value to 0
 ADDI	T1,Zero,1000        ; Set timer limit to 1000
 SW		T1,TLIM(Zero)       ; Store 1000 as the timer limit
-SUBI	T1,T1,1             ; Set timer limit to 999 for comparison
 SW		T0,HEX(Zero)        ; Display 0 on HEX pins
 
 ; Loop until 1 second has passed
 ClockLoop:
-LW		T2,TCNT(Zero)       ; Load current ms
-BNE		T1,T2,ClockLoop     ; Loop unless a second has passed
-CALL    WaitForReset(Zero)  ; Wait until clock resets
+LW      T3,TCTRL(Zero)      ; Load control bits
+BEQ		T3,Zero,ClockLoop   ; Loop unless a second has passed
+SW      Zero,TCTRL(Zero)    ; Set ready bit to 0
 ADDI	T0,T0,1             ; Increment clock value
 SW		T0,HEX(Zero)        ; Display clock value on HEX pins
 BR      ClockLoop           ; Loop unconditionally
-
-; Wait for timer to reset to 0
-WaitForReset:
-LW      T2,TCNT(Zero)           ; Load current ms
-BNE     T2,Zero,WaitForReset    ; Loop unless timer has reset 
-RET                             ; Return
