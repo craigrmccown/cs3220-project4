@@ -6,7 +6,7 @@
 .NAME	TCNT = 0xFFFFF100
 .NAME	TLIM = 0xFFFF0104
 .NAME	TCTRL = 0xFFFF0108
-.NAME   CLOCKADDR = 0x00008000
+.NAME   STACK = 0x8000
 
 .ORIG 0x100
 
@@ -19,6 +19,7 @@
 ; T4 is timer limit
 Init:
 XOR		Zero,Zero,Zero          ; Set Zero register to 0
+LW      SP,StackAddr(Zero)      ; Initialize stack pointer
 ADDI    T0,Zero,0x50            ; Set seconds to 50
 ADDI    T1,Zero,0x59            ; Set minutes to 59
 ADDI    T2,Zero,0x23            ; Set hours to 23
@@ -44,24 +45,53 @@ LW      T3,TCtrlAddr(Zero)      ; Load timer control address
 SW      Zero,0(T3)              ; Clear ready bit
 BR      ClockLoop               ; Loop forever
 
+
+; Returns from function
+;
+; SP is stack pointer
+; RA is return address
+Return:
+SUBI    SP,SP,4                 ; Pop stack
+LW      RA,0(SP)                ; Load previous return address
+RET
+
 ; Displays the current time on the HEX display
 ;
 ; T0 is seconds
 ; T1 is minutes
 ; T2 is hours
-; T3 is shifted minutes
-; T4 is shifted hours
-; T5 is clock value
+; T3 is shifted values
+; T4 is clock value
 DisplayClock:
-ADD     T3,T1,T1                ; Shifted minutes = minutes x 2
-ADD     T3,T3,T3                ; Shifted minutes = minutes x 4
-ADD     T4,T2,T2                ; Shifted hours = hours x 2
-ADD     T4,T4,T4                ; Shifted hours = hours x 4 
-ADD     T4,T4,T4                ; Shifted hours = hours x 8
-OR      T5,T0,T3                ; Clock value contains seconds and minutes
-OR      T5,T5,T4                ; Clock value contains seconds, minutes, and hours
+SW      RA,0(SP)                ; Store return address
+ADDI    SP,SP,4                 ; Push stack
+ADD     T3,T1,Zero              ; Set shifted value to minutes
+CALL    ByteShift(Zero)         ; Left shift 8 bits
+OR      T4,T0,T3                ; Clock value holds seconds and minutes
+ADD     T3,T2,Zero              ; Set shifted value to hours
+CALL    ByteShift(Zero)         ; Left shift 8 bits
+CALL    ByteShift(Zero)         ; Left shift 8 more bits
+OR      T4,T4,T3                ; Clock value holds seconds, minutes, and hours
 SW      T5,HEX(Zero)            ; Display the clock value on the HEX pins
-RET
+BR      Return
+
+; Shifts a value up one byte
+;
+; T0 is seconds
+; T1 is minutes
+; T2 is hours
+; T3 is unshifted value
+; T4 is loop counter
+ByteShift:
+SW      RA,0(SP)                ; Store return address
+ADDI    SP,SP,4                 ; Push stack
+ADDI    T4,Zero,8               ; Set loop counter to 8
+
+ByteShiftLoop:
+ADD     T3,T3,T3                ; Left shift 1 bit
+SUBI    T4,T4,1                 ; Decrement loop counter
+BNE     T4,Zero,ByteShiftLoop   ; Loop 8 times
+BR      Return
 
 ; Increments clock value
 ;
@@ -71,6 +101,8 @@ RET
 ; T3 is overflow value
 ; T4 is current digit
 IncClock:
+SW      RA,0(SP)                ; Store return address
+ADDI    SP,SP,4                 ; Push stack
 ADDI    T3,Zero,0x59            ; Set overflow value to 59
 BEQ     T3,T0,IncMin            ; Go to IncMin if there are 59 seconds
 ADDI    T3,Zero,0x9             ; Set overflow value to 9
@@ -78,12 +110,12 @@ ADD     T4,Zero,T0              ; Set current digit to seconds
 ANDI    T4,T4,0xF               ; Mask to get least significant digit
 BEQ     T3,T4,SecOverflow       ; Go to SecOverflow if the least significant digit is 9
 ADDI    T0,T0,1                 ; Otherwise, increment seconds
-RET
+BR      Return
 
 SecOverflow:
 ADDI    T0,T0,0x10              ; Add 10 seconds
 ANDI    T0,T0,0xF0              ; Set least significant digit to 0
-RET
+BR      Return
 
 IncMin:
 XOR     T0,T0,T0                ; Clear seconds
@@ -94,12 +126,12 @@ ADD     T4,Zero,T1              ; Set current digit to minutes
 ANDI    T4,T4,0xF               ; Mask to get least significant digit
 BEQ     T3,T4,MinOverflow       ; Go to MinOverflow if the least significant digit is 9
 ADDI    T1,T1,1                 ; Otherwise, increment minutes
-RET
+BR      Return
 
 MinOverflow:
 ADDI    T1,T1,0x10              ; Add 10 minutes
 ANDI    T1,T1,0xF0              ; Set least significant digit to 0
-RET
+BR      Return
 
 IncHour:
 XOR     T1,T1,T1                ; Clear minutes
@@ -110,21 +142,21 @@ ADD     T4,Zero,T2              ; Set current digit to hours
 ANDI    T4,T4,0xF               ; Mask to get least significant digit
 BEQ     T3,T4,HourOverflow      ; Go to HourOverflow if the least significant digit is 9
 ADDI    T2,T2,1                 ; Otherwise, increment hours
-RET
+BR      Return
 
 HourOverflow:
 ADDI    T2,T2,0x10              ; Add 10 hours
 ANDI    T2,T2,0xF0              ; Set least significant digit to 0
-RET
+BR      Return
 
 Rollover:
 XOR     T2,T2,T2                ; Clear hours
-RET
+BR      Return
 
 ; Static data
 TLimAddr:
 .WORD TLIM
 TCtrlAddr:
 .WORD TCTRL
-ClockValAddr:
-.WORD CLOCKADDR 
+StackAddr:
+.WORD STACK
