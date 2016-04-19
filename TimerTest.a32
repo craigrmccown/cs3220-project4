@@ -25,7 +25,7 @@ SW		T0,HEX(Zero)        ; Display 0 on HEX pins
 
 ; Loop until 1 second has passed
 ClockLoop:
-LW      T0,TCNT(Zero)       ; temp
+LW      T0,TCTRL(Zero)       ; temp
 SW      T0,HEX(Zero)        ; temp
 LW      T3,TCTRL(Zero)      ; Load control bits
 BEQ		T3,Zero,ClockLoop   ; Loop unless a second has passed
