@@ -6,7 +6,7 @@
 .NAME	TCNT = 0xFFFFF100
 .NAME	TLIM = 0xFFFF0104
 .NAME	TCTRL = 0xFFFF0108
-.NAME	TINIT = 0x235950
+.NAME   CLOCKADDR = 0x00008000
 
 .ORIG 0x100
 
@@ -17,8 +17,10 @@
 ; T2 is timer limit
 Init:
 XOR		Zero,Zero,Zero          ; Set Zero register to 0
-LW      T0,TInitVal(Zero)       ; Set initial clock value to 23:59:50
-SW		T0,HEX(Zero)            ; Display clock value on HEX pins
+ADDI    T0,Zero,0x50            ; Set seconds to 50
+ADDI    T1,Zero,0x59            ; Set minutes to 59
+ADDI    T2,Zero,0x23            ; Set hours to 23
+CALL    DisplayClock(Zero)      ; Display clock value
 LW      T1,TLimAddr(Zero)       ; Load timer limit address
 ADDI	T2,Zero,1000            ; Set timer limit to 1000
 SW		T2,0(T1)                ; Store 1000 as the timer limit
@@ -35,96 +37,84 @@ BEQ		T2,Zero,ClockLoop       ; Loop unless a second has passed
 CALL    IncClock(Zero)          ; Increment clock every second
 LW      T1,TCtrlAddr(Zero)      ; Load timer control address
 SW      Zero,0(T1)              ; Clear ready bit
-SW		T0,HEX(Zero)            ; Display clock value on HEX pins
+CALL    DisplayClock(Zero)      ; Display clock value
 BR      ClockLoop               ; Loop forever
+
+; Displays the current time on the HEX display
+;
+; T0 is seconds
+; T1 is minutes
+; T2 is hours
+; T3 is clock address
+; T4 is clock value
+DisplayClock:
+LW      T3,ClockValAddr(Zero)   ; Load clock address
+ADDI    T3,T3,2                 ; Move 2 bytes forwards
+SW      T0,0(T3)                ; Store seconds
+SUBI    T3,T3,1                 ; Move 1 byte backwards
+SW      T1,0(T3)                ; Store minutes
+SUBI    T3,T3,1                 ; Move 1 byte backwards
+SW      T2,0(T3)                ; Store hours
+LW      T4,0(T3)                ; Load clock value
+SW      T4,HEX(Zero)            ; Display clock value on HEX pins
+RET
 
 ; Increments clock value
 ;
-; T0 is clock value
-; T1 is current digit
-; T2 is overflow value
+; T0 is seconds
+; T1 is minutes
+; T2 is hours
+; T3 is overflow value
+; T4 is current digit
 IncClock:
-ADD		T1,T0,Zero              ; Set current digit to clock value
-ANDI	T1,T1,0x0000000F        ; Mask to get least significant digit
-ADDI	T2,Zero,0x9             ; Set digit overflow to 9
-BEQ		T1,T2,OverOne           ; Go to OverOne if overflow is detected
-ADDI	T0,T0,0x1               ; If no overflow, increment clock value
+ADDI    T3,Zero,0x59            ; Set overflow value to 59
+BEQ     T3,T0,IncMin            ; Go to IncMin if there are 59 seconds
+ADDI    T3,Zero,0x9             ; Set overflow value to 9
+ADD     T4,Zero,T0              ; Set current digit to seconds
+ANDI    T4,T4,0xF               ; Mask to get least significant digit
+BEQ     T3,T4,SecOverflow       ; Go to SecOverflow if the least significant digit is 9
+ADDI    T0,T0,1                 ; Otherwise, increment seconds
 RET
 
-; Handles digit 1 overflow
-;
-; T0 is clock value
-; T1 is current digit
-; T2 is overflow value
-OverOne:
-ADD		T1,T0,Zero              ; Set current digit to clock value
-ANDI	T1,T1,0x000000F0        ; Mask to get second least significant digit
-ADDI	T2,Zero,0x50            ; Set digit overflow to 0x50
-BEQ		T1,T2,OverTwo           ; Go to OverTwo if overflow is detected
-ADDI	T0,T0,0x10              ; If no overflow, increment clock value by 0x10
-ANDI	T0,T0,0xFFFFFFF0        ; Set least significant digit to 0
+SecOverflow:
+ADDI    T0,T0,0x10              ; Add 10 seconds
+ANDI    T0,T0,0xF0              ; Set least significant digit to 0
 RET
 
-; Handles digit 2 overflow
-;
-; T0 is clock value
-; T1 is current digit
-; T2 is overflow value
-OverTwo:
-ADD		T1,T0,Zero
-ANDI	T1,T1,0x00000F00
-ADDI	T2,Zero,0x900
-BEQ		T1,T2,OverThree
-ADDI	T0,T0,0x100
-ANDI	T0,T0,0xFFFFFF00
+IncMin:
+XOR     T0,T0,T0                ; Clear seconds
+ADDI    T3,Zero,0x59            ; Set overflow value to 59
+BEQ     T3,T1,IncHour           ; Go to IncHour if there are 59 minutes
+ADDI    T3,Zero,0x9             ; Set overflow value to 9
+ADD     T4,Zero,T1              ; Set current digit to minutes
+ANDI    T4,T4,0xF               ; Mask to get least significant digit
+BEQ     T3,T4,MinOverflow       ; Go to MinOverflow if the least significant digit is 9
+ADDI    T1,T1,1                 ; Otherwise, increment minutes
 RET
 
-; Handles digit 3 overflow
-;
-; T0 is clock value
-; T1 is current digit
-; T2 is overflow value
-OverThree:
-ADD		T1,T0,Zero
-ANDI	T1,T1,0x0000F000
-ADDI	T2,Zero,0x5000
-BEQ		T1,T2,OverFour
-ADDI	T0,T0,0x1000
-ANDI	T0,T0,0xFFFFF000
+MinOverflow:
+ADDI    T1,T1,0x10              ; Add 10 minutes
+ANDI    T1,T1,0xF0              ; Set least significant digit to 0
 RET
 
-; Handles digit 4 overflow. First, check if the hours have reached
-; 23. Then, check if digit 5 has reached 9.
-;
-; T0 is clock value
-; T1 is current digit
-; T2 is overflow value
-OverFour:
-ADD		T1,T0,Zero
-ANDI    T1,T1,0x00FF0000
-ADDI    T2,Zero,0x230000
-BEQ     T1,T2,Rollover
-ANDI	T1,T1,0x000F0000 
-ADDI	T2,Zero,0x90000
-BEQ		T1,T2,OverFive
-ADDI	T0,T0,0x10000
-ANDI	T0,T0,0xFFFF0000
+IncHour:
+XOR     T1,T1,T1                ; Clear minutes
+ADDI    T3,Zero,0x23            ; Set overflow value to 23
+BEQ     T3,T2,Rollover          ; Go to Rollover if there are 23 hours
+ADDI    T3,Zero,0x9             ; Set overflow value to 9
+ADD     T4,Zero,T1              ; Set current digit to hours
+ANDI    T4,T4,0xF               ; Mask to get least significant digit
+BEQ     T3,T4,HourOverflow      ; Go to HourOverflow if the least significant digit is 9
+ADDI    T2,T2,1                 ; Otherwise, increment hours
 RET
 
-; Handles digit 5 overflow by simply incrementing digit 6 and zeroing
-; out the least significant 5 digits
-;
-; T0 is clock value
-OverFive:
-ADDI	T0,T0,0x100000
-ANDI	T0,T0,0xFFF00000
+HourOverflow:
+ADDI    T2,T2,0x10              ; Add 10 hours
+ANDI    T2,T2,0xF0              ; Set least significant digit to 0
 RET
 
-; Resets the clock value to 0
-;
-; T0 is clock value
 Rollover:
-XOR     T0,T0,T0
+XOR     T2,T2,T2                ; Clear hours
 RET
 
 ; Static data
@@ -132,5 +122,5 @@ TLimAddr:
 .WORD TLIM
 TCtrlAddr:
 .WORD TCTRL
-TInitVal:
-.WORD TINIT
+ClockValAddr:
+.WORD CLOCKADDR 
