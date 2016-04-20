@@ -62,6 +62,7 @@ ADDI    SP,SP,12                    ; Allocate memory for RA and RV
 CALL    IncClock(Zero)              ; Increment clock every second
 
 SW      FP,0(SP)                    ; Store frame pointer
+ADD     FP,SP,Zero                  ; Set frame pointer to new record
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
 ADD     A0,S0,Zero                  ; Arg 1: seconds
 ADD     A1,S1,Zero                  ; Arg 2: minutes
