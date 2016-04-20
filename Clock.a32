@@ -202,7 +202,14 @@ LW      T0,TestVal(Zero)
 SW      T0,HEX(Zero)
 
 KeyPressedLoop:
+LW      T0,KCTRL(Zero)
+BEQ     T0,Zero,KeyPressedLoop
+
+TestKeyUp:
+LW      T0,KEY(Zero)
+BEQ     T0,Zero,ClockLoop
 BR      KeyPressedLoop
+
 
 ; Static data
 TLimAddr:
