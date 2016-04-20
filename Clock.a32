@@ -60,6 +60,13 @@ BR      DisplayLoop                 ; Loop forever
 ; S6 is 1 if the timer has not ticked while the current second is being timed and
 ; 0 if it has
 KeyDown:
+LW      T0,TCTRL(Zero)              ; Load timer control value
+BEQ     T0,Zero,KeyDownInit         ; Go to KeyDownInit if timer has not ticked
+SW      FP,0(SP)                    ; Store frame pointer
+ADDI    SP,SP,12                    ; Allocate memory for RA and RV
+CALL    IncAndDisplay(Zero)         ; Tick clock
+
+KeyDownInit:
 LW      S4,TCNT(Zero)               ; Store initial timer value
 XOR     S5,S5,S5                    ; Zero out the transition elapsed count
 ADDI    S6,Zero,1                   ; Set has not ticked to 1
@@ -84,7 +91,7 @@ CALL    IncAndDisplay(Zero)         ; Tick clock
 
 SW      Zero,0(S3)                  ; Set ready bit to 0
 XOR     S6,S6,S6                    ; Set has not ticked to 0
-BR      KeyDownTime                 ; Continue with transition period
+BR      KeyDownTime
 
 KeyDownElapse:
 ADDI    S5,S5,1                     ; Increment elapsed count
