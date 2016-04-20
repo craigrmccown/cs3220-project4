@@ -25,7 +25,7 @@ module Project(
 	parameter ADDRTCNT = 32'hFFFFF100;
 	parameter ADDRTLIM = 32'hFFFF0104;
 	parameter ADDRTCTRL = 32'hFFFF0108;
-	parameter IMEMINITFILE = "TimerTest.mif";
+	parameter IMEMINITFILE = "Clock.mif";
 	parameter IMEMADDRBITS = 16;
 	parameter IMEMWORDBITS = 2;
 	parameter IMEMWORDS = (1 << (IMEMADDRBITS - IMEMWORDBITS));
