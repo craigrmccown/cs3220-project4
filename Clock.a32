@@ -41,10 +41,11 @@ LW		T4,0(T3)                ; Load current timer control bits
 BEQ		T4,Zero,ClockLoop       ; Loop unless a second has passed
 CALL    IncClock(Zero)          ; Increment clock every second
 CALL    DisplayClock(Zero)      ; Display clock value
+ADDI    T6,Zero,0xDEAD          ; temp      
+SW      T6,HEX(Zero)            ; temp
 LW      T3,TCtrlAddr(Zero)      ; Load timer control address
 SW      Zero,0(T3)              ; Clear ready bit
 BR      ClockLoop               ; Loop forever
-
 
 ; Returns from function
 ;
