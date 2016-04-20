@@ -62,9 +62,8 @@ BR      ClockLoop               ; Loop forever
 ; S0 is clock value
 ; T0 is seconds
 ; T1 is shifted minutes
-; T2 is shifted hours
 DisplayClock:
-ADDI    SP,SP,16                ; Push stack
+ADDI    SP,SP,20                ; Push stack
 SW      RA,4(FP)                ; Store return address
 SW      A0,-16(SP)              ; Store arg 1
 SW      A1,-12(SP)              ; Store arg 2
@@ -93,9 +92,8 @@ ADD     FP,SP,Zero              ; Set frame pointer to new record
 ADDI    SP,SP,12                ; Allocate memory for RA and RV
 ADD     A0,RV,Zero              ; Grab return value and put into arg 1
 CALL    ByteShift(Zero)         ; Left shift 8 bits
-ADD     T2,RV,Zero              ; Grab return value
 
-OR      S0,S0,T2                ; Clock value holds seconds, minutes, and hours
+OR      S0,S0,RV                ; Clock value holds seconds, minutes, and hours
 SW      S0,HEX(Zero)            ; Display the clock value on the HEX pins
 
 DisplayClockRet:
@@ -125,7 +123,7 @@ ByteShiftRet:
 LW      RA,4(FP)                ; Load return address
 ADD     SP,FP,Zero              ; Pop stack
 ADD     RV,A0,Zero              ; Return shifted value
-LW      FP,0(SP)                ; Restore old frame pointer
+LW      FP,0(FP)                ; Restore old frame pointer
 RET
 
 ; Increments clock value
