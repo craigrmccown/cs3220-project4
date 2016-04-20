@@ -32,6 +32,7 @@ ADDI	T0,Zero,1000                ; Set timer limit to 1000
 SW		T0,0(S3)                    ; Store 1000 as the timer limit
 LW      S3,TCtrlAddr(Zero)          ; Load timer control address
 
+DisplayMode:
 SW      FP,0(SP)                    ; Store frame pointer
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
 ADD     A0,S0,Zero                  ; Arg 1: seconds
@@ -39,18 +40,98 @@ ADD     A1,S1,Zero                  ; Arg 2: minutes
 ADD     A2,S2,Zero                  ; Arg 3: hours
 CALL    DisplayClock(Zero)          ; Display clock value
 
-DisplayMode:
+DisplayLoop:
 LW      T0,KCTRL(Zero)              ; Load current key control bits
 BNE     T0,Zero,SetTransition       ; Go to KeyPressHandler if key is pressed
 LW		T0,0(S3)                    ; Load current timer control bits
-BEQ		T0,Zero,DisplayMode         ; Loop unless a second has passed
+BEQ		T0,Zero,DisplayLoop         ; Loop unless a second has passed
 
 SW      FP,0(SP)                    ; Store frame pointer
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
 CALL    IncAndDisplay(Zero)         ; Tick clock
 
 SW      Zero,0(S3)                  ; Clear ready bit
-BR      DisplayMode                 ; Loop forever
+BR      DisplayLoop                 ; Loop forever
+
+; Handles transition into set mode
+;
+; S4 is initial timer value
+; S5 is seconds elapsed while a key is held down
+; S6 is 1 if the timer has not ticked while the current second is being timed and
+; 0 if it has
+SetTransition:
+LW      S4,TCNT(Zero)               ; Store initial timer value
+XOR     S5,S5,S5                    ; Zero out the transition elapsed count
+ADDI    S6,Zero,1                   ; Set has not ticked to 1
+
+SetTransitionLoop:
+LW      T0,0(S3)                    ; Load timer control value
+BNE     T0,Zero,SetTransitionTick   ; Go to SetTransitionTick if timer reaches limit
+LW      T0,TCNT(Zero)               ; Load current timer count
+SUB     T1,T0,S4                    ; Set T1 to difference of timer count and inital timer value
+OR      T1,T1,S6                    ; T1 is zero if timer count is initial value and the timer has ticked
+BEQ     T1,Zero,SetTransitionElapse ; Go to SetTransitionElapse if timer wraps back around
+LW      T0,KCTRL(Zero)              ; Load key control value
+BEQ     T0,Zero,SetTransitionLoop   ; Loop if key is still down
+LW      T0,KEY(Zero)                ; Load key value
+BEQ     T0,Zero,DisplayMode         ; Go back to display mode if no keys are pressed
+BR      SetTransitionLoop           ; Loop if any keys are still down
+
+SetTransitionTick:
+SW      FP,0(SP)                    ; Store frame pointer
+ADDI    SP,SP,12                    ; Allocate memory for RA and RV
+CALL    IncAndDisplay(Zero)         ; Tick clock
+
+SW      Zero,0(S3)                  ; Set ready bit to 0
+XOR     S6,S6,S6                    ; Set has not ticked to 0
+BR      SetTransitionLoop           ; Continue with transition period
+
+SetTransitionElapse:
+ADDI    S5,S5,1                     ; Increment elapsed count
+ADDI    S6,Zero,1                   ; Set has not ticked to 1
+ADDI    T0,Zero,2                   ; Load 2 into T0
+BNE     S5,T0,SetTransitionLoop     ; Loop if less than 2 seconds have elapsed
+BR      SetMode
+
+; When clock is in set mode
+;
+; S4 is initial timer value
+; S5 is seconds elapsed while a key is held down
+; S6 is 1 if the timer has not ticked while the current second is being timed and
+; 0 if it has
+SetMode:
+LW      T0,TestVal(Zero)
+SW      T0,HEX(Zero)
+LW      S4,TCNT(Zero)
+XOR     S5,S5,S5
+ADDI    S6,Zero,1
+
+SetModeLoop:
+LW      T0,0(S3)
+BNE     T0,Zero,SetModeIncClock
+LW      T0,TCNT(Zero)
+SUB     T1,T0,S4
+OR      T1,T1,S6
+BEQ     T1,Zero,SetModeElapse
+LW      T0,KCTRL(Zero)
+BNE     T0,Zero,SetMode
+BR      SetModeLoop
+
+SetModeIncClock:
+SW      FP,0(SP)
+ADDI    SP,SP,12
+CALL    IncClock(Zero)
+
+SW      Zero,0(S3)
+XOR     S6,S6,S6
+BR      SetModeLoop
+
+SetModeElapse:
+ADDI    S5,S5,1
+ADDI    S6,Zero,1
+ADDI    T0,Zero,5
+BEQ     S5,T0,DisplayMode
+BR      SetModeLoop
 
 ; Increments clock and displays the incremented value on the HEX pins
 IncAndDisplay:
@@ -212,46 +293,6 @@ LW      RA,4(FP)                    ; Load return address
 ADD     SP,FP,Zero                  ; Pop stack
 LW      FP,0(FP)                    ; Restore old frame pointer
 RET
-
-SetTransition:
-LW      S4,TCNT(Zero)               ; Store initial timer value
-XOR     S5,S5,S5                    ; Zero out the transition elapsed count
-ADDI    S6,Zero,1                   ; Set has not ticked to 1
-
-SetTransitionLoop:
-LW      T0,0(S3)                    ; Load timer control value
-BNE     T0,Zero,SetTransitionTick   ; Go to SetTransitionTick if timer reaches limit
-LW      T0,TCNT(Zero)               ; Load current timer count
-SUB     T1,T0,S4                    ; Set T1 to difference of timer count and inital timer value
-OR      T1,T1,S6                    ; T1 is zero if timer count is initial value and the timer has ticked
-BEQ     S6,Zero,SetTransitionElapse ; Go to SetTransitionElapse if timer wraps back around
-LW      T0,KCTRL(Zero)              ; Load key control value
-BEQ     T0,Zero,SetTransitionLoop   ; Loop if key is still down
-LW      T0,KEY(Zero)                ; Load key value
-BEQ     T0,Zero,DisplayMode         ; Go back to display mode if no keys are pressed
-BR      SetTransitionLoop           ; Loop if any keys are still down
-
-SetTransitionTick:
-SW      FP,0(SP)                    ; Store frame pointer
-ADDI    SP,SP,12                    ; Allocate memory for RA and RV
-CALL    IncAndDisplay(Zero)         ; Tick clock
-
-SW      Zero,0(S3)                  ; Set ready bit to 0
-XOR     S6,S6,S6                    ; Set has not ticked to 0
-BR      SetTransitionLoop           ; Continue with transition period
-
-SetTransitionElapse:
-ADDI    S5,S5,1                     ; Increment elapsed count
-ADDI    S6,Zero,1                   ; Set has not ticked to 1
-ADDI    T0,Zero,2                   ; Load 2 into T0
-BNE     S5,T0,SetTransitionLoop     ; Loop if less than 2 seconds have elapsed
-
-SetTransitionEnd:
-LW      T0,TestVal(Zero)
-SW      T0,HEX(Zero)
-
-SetTransitionEndLoop:
-BR      SetTransitionEndLoop
 
 ; Static data
 TLimAddr:
