@@ -96,12 +96,45 @@ BR      KeyDownLoop                 ; Otherwise, loop
 KeyDownExit:
 BR      DisplayMode
 
+; When clock is in set mode
+;
+; S4 is initial timer value
+; S5 is seconds elapsed while no key is held down
+; S6 is 1 if the timer has not ticked while the current second is being timed and
+; 0 if it has
 SetMode:
-LW      T0,TestVal(Zero)
-SW      T0,HEX(Zero)
+LW      S4,TCNT(Zero)               ; Store initial timer value
+XOR     S5,S5,S5                    ; Zero out the transition elapsed count
+ADDI    S6,Zero,1                   ; Set has not ticked to 1
 
 SetModeLoop:
+LW      T0,KEY(Zero)
+BNE     T0,Zero,SetMode
+LW      T0,0(S3)
+BNE     T0,Zero,SetModeTick
+
+SetModeTime:
+LW      T0,TCNT(Zero)
+SUB     T1,T0,S4
+OR      T1,T1,S6
+BEQ     T1,Zero,SetModeElapse
 BR      SetModeLoop
+
+SetModeTick:
+SW      FP,0(SP)                    ; Store frame pointer
+ADDI    SP,SP,12                    ; Allocate memory for RA and RV
+CALL    IncAndDisplay(Zero)         ; Tick clock
+
+SW      Zero,0(S3)                  ; Set ready bit to 0
+XOR     S6,S6,S6                    ; Set has not ticked to 0
+BR      SetModeTime
+
+SetModeElapse:
+ADDI    S5,S5,1                     ; Increment elapsed count
+ADDI    S6,Zero,1                   ; Set has not ticked to 1
+ADDI    T0,Zero,5                   ; Load 5 into T0
+BEQ     S5,T0,DisplayMode           ; Switch to display mode if 5 seconds have elapsed
+BR      SetModeLoop                 ; Otherwise, loop
 
 ; Increments clock and displays the incremented value on the HEX pins
 IncAndDisplay:
