@@ -16,7 +16,7 @@
 ; S1 is minutes
 ; S2 is hours
 ; S3 is device addresses
-; S4 is timer limit
+; S4 is device values
 Main:
 XOR		Zero,Zero,Zero          ; Set Zero register to 0
 LW      SP,StackAddr(Zero)      ; Initialize stack pointer
@@ -27,7 +27,7 @@ ADDI    S2,Zero,0x23            ; Set hours to 23
 LW      S3,TLimAddr(Zero)       ; Load timer limit address
 ADDI	S4,Zero,1000            ; Set timer limit to 1000
 SW		S4,0(S3)                ; Store 1000 as the timer limit
-LW      S4,TCtrlAddr(Zero)      ; Load timer control address
+LW      S3,TCtrlAddr(Zero)      ; Load timer control address
 
 SW      FP,0(SP)                ; Store frame pointer
 ADDI    SP,SP,12                ; Allocate memory for RA and RV
@@ -189,7 +189,7 @@ BR      IncClockRet
 IncClockRet:
 LW      RA,4(FP)                ; Load return address
 ADD     SP,FP,Zero              ; Pop stack
-LW      FP,0(SP)                ; Restore old frame pointer
+LW      FP,0(FP)                ; Restore old frame pointer
 RET
 
 ; Static data
