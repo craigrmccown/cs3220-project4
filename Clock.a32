@@ -65,7 +65,7 @@ XOR     S5,S5,S5                    ; Zero out the transition elapsed count
 ADDI    S6,Zero,1                   ; Set has not ticked to 1
 
 KeyDownLoop:
-LW      T0,KCTRL(Zero)              ; Load key control value
+LW      T0,KEY(Zero)                ; Load key value
 BEQ     T0,Zero,KeyDownExit         ; Exit if no keys are down
 LW      T0,0(S3)                    ; Load timer control value
 BNE     T0,Zero,KeyDownTick         ; Go to KeyDownTick if tick detected
