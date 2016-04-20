@@ -125,7 +125,7 @@ BR      SetModeLoop
 SetModeTick:
 SW      FP,0(SP)                    ; Store frame pointer
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
-CALL    IncAndDisplay(Zero)         ; Tick clock
+CALL    IncClock(Zero)              ; Tick clock
 
 SW      Zero,0(S3)                  ; Set ready bit to 0
 XOR     S6,S6,S6                    ; Set has not ticked to 0
