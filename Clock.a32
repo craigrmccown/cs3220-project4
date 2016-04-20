@@ -107,11 +107,8 @@ RET
 
 ; Shifts a value up one byte
 ;
-; T0 is seconds
-; T1 is minutes
-; T2 is hours
-; T3 is unshifted value
-; T4 is loop counter
+; A0 is value to shift
+; T0 is loop counter
 ByteShift:
 SW      RA,4(FP)                ; Store return address
 ADDI    SP,SP,8                 ; Push stack
@@ -127,6 +124,7 @@ BNE     T0,Zero,ByteShiftLoop   ; Loop 8 times
 ByteShiftRet:
 LW      RA,4(FP)                ; Load return address
 ADD     SP,FP,Zero              ; Pop stack
+ADD     RV,A0,Zero              ; Return shifted value
 LW      FP,0(SP)                ; Restore old frame pointer
 RET
 
