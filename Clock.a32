@@ -214,14 +214,17 @@ LW      FP,0(FP)                    ; Restore old frame pointer
 RET
 
 SetTransition:
-LW      S4,TCNT(Zero)               ; Store initial clock value
+LW      S4,TCNT(Zero)               ; Store initial timer value
 XOR     S5,S5,S5                    ; Zero out the transition elapsed count
+ADDI    S6,Zero,1                   ; Set has not ticked to 1
 
 SetTransitionLoop:
 LW      T0,0(S3)                    ; Load timer control value
 BNE     T0,Zero,SetTransitionTick   ; Go to SetTransitionTick if timer reaches limit
 LW      T0,TCNT(Zero)               ; Load current timer count
-BEQ     S4,T0,SetTransitionElapse   ; Go to SetTransitionElapse if timer wraps back around
+SUB     T1,T0,S4                    ; Set T1 to difference of timer count and inital timer value
+OR      T1,T1,S6                    ; T1 is zero if timer count is initial value and the timer has ticked
+BEQ     S6,Zero,SetTransitionElapse ; Go to SetTransitionElapse if timer wraps back around
 LW      T0,KCTRL(Zero)              ; Load key control value
 BEQ     T0,Zero,SetTransitionLoop   ; Loop if key is still down
 LW      T0,KEY(Zero)                ; Load key value
@@ -233,10 +236,13 @@ SW      FP,0(SP)                    ; Store frame pointer
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
 CALL    IncAndDisplay(Zero)         ; Tick clock
 
+SW      Zero,0(S3)                  ; Set ready bit to 0
+XOR     S6,S6,S6                    ; Set has not ticked to 0
 BR      SetTransitionLoop           ; Continue with transition period
 
 SetTransitionElapse:
 ADDI    S5,S5,1                     ; Increment elapsed count
+ADDI    S6,Zero,1                   ; Set has not ticked to 1
 ADDI    T0,Zero,2                   ; Load 2 into T0
 BNE     S5,T0,SetTransitionLoop     ; Loop if less than 2 seconds have elapsed
 
