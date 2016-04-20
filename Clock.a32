@@ -57,6 +57,7 @@ IncAndDisplay:
 SW      RA,4(FP)                    ; Store return address
 
 SW      FP,0(SP)                    ; Store frame pointer
+ADD     FP,SP,Zero                  ; Set frame pointer to new record
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
 CALL    IncClock(Zero)              ; Increment clock every second
 
@@ -73,7 +74,7 @@ ADD     SP,FP,Zero                  ; Pop stack
 LW      FP,0(FP)                    ; Restore old frame pointer
 RET
 
-; Displays the current time on the HEX display
+; Displays the current time on the HEX pins
 ;
 ; A0 is seconds
 ; A1 is minutes
