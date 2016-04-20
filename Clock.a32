@@ -103,6 +103,12 @@ BR      DisplayMode
 ; S6 is 1 if the timer has not ticked while the current second is being timed and
 ; 0 if it has
 SetMode:
+LW      T0,TestVal(Zero)
+SW      T0,HEX(Zero)
+
+SetModeLoop:
+BR SetModeLoop
+
 LW      S4,TCNT(Zero)               ; Store initial timer value
 XOR     S5,S5,S5                    ; Zero out the transition elapsed count
 ADDI    S6,Zero,1                   ; Set has not ticked to 1
