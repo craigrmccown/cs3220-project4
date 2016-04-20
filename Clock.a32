@@ -41,8 +41,6 @@ LW		T4,0(T3)                ; Load current timer control bits
 BEQ		T4,Zero,ClockLoop       ; Loop unless a second has passed
 CALL    IncClock(Zero)          ; Increment clock every second
 CALL    DisplayClock(Zero)      ; Display clock value
-ADDI    T6,Zero,0xDEAD          ; temp      
-SW      T6,HEX(Zero)            ; temp
 LW      T3,TCtrlAddr(Zero)      ; Load timer control address
 SW      Zero,0(T3)              ; Clear ready bit
 BR      ClockLoop               ; Loop forever
@@ -76,7 +74,7 @@ ADD     T3,T2,Zero              ; Set shifted value to hours
 CALL    ByteShift(Zero)         ; Left shift 8 bits
 CALL    ByteShift(Zero)         ; Left shift 8 more bits
 LW      T4,0(SP)                ; Load partial result from stack
-SUBI    SP,SP,1                 ; Pop stack
+SUBI    SP,SP,4                 ; Pop stack
 OR      T4,T4,T3                ; Clock value holds seconds, minutes, and hours
 SW      T4,HEX(Zero)            ; Display the clock value on the HEX pins
 BR      Return
