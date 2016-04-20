@@ -12,72 +12,100 @@
 
 ; Set initial register values
 ;
-; T0 is seconds
-; T1 is minutes
-; T2 is hours
-; T3 is device addresses
-; T4 is timer limit
-Init:
+; S0 is seconds
+; S1 is minutes
+; S2 is hours
+; S3 is device addresses
+; S4 is timer limit
+Main:
 XOR		Zero,Zero,Zero          ; Set Zero register to 0
 LW      SP,StackAddr(Zero)      ; Initialize stack pointer
-ADDI    T0,Zero,0x50            ; Set seconds to 50
-ADDI    T1,Zero,0x59            ; Set minutes to 59
-ADDI    T2,Zero,0x23            ; Set hours to 23
-CALL    DisplayClock(Zero)      ; Display clock value
-LW      T3,TLimAddr(Zero)       ; Load timer limit address
-ADDI	T4,Zero,1000            ; Set timer limit to 1000
-SW		T4,0(T3)                ; Store 1000 as the timer limit
-LW      T3,TCtrlAddr(Zero)      ; Load timer control address
+ADD     FP,SP,Zero              ; Initialize frame pointer
+ADDI    S0,Zero,0x50            ; Set seconds to 50
+ADDI    S1,Zero,0x59            ; Set minutes to 59
+ADDI    S2,Zero,0x23            ; Set hours to 23
+LW      S3,TLimAddr(Zero)       ; Load timer limit address
+ADDI	S4,Zero,1000            ; Set timer limit to 1000
+SW		S4,0(S3)                ; Store 1000 as the timer limit
+LW      S4,TCtrlAddr(Zero)      ; Load timer control address
 
-; Main clock loop
-;
-; T0 is seconds
-; T1 is minutes
-; T2 is hours
-; T3 is timer control address
-; T4 is timer control value
+SW      FP,0(SP)                ; Store frame pointer
+ADDI    SP,SP,12                ; Allocate memory for RA and RV
+ADD     A0,S1,Zero              ; Arg 1
+ADD     A1,S2,Zero              ; Arg 2 
+ADD     A2,S3,Zero              ; Arg 3
+CALL    DisplayClock(Zero)      ; Display clock value
+
 ClockLoop:
-LW		T4,0(T3)                ; Load current timer control bits
-BEQ		T4,Zero,ClockLoop       ; Loop unless a second has passed
-CALL    IncClock(Zero)          ; Increment clock every second
-CALL    DisplayClock(Zero)      ; Display clock value
-LW      T3,TCtrlAddr(Zero)      ; Load timer control address
-SW      Zero,0(T3)              ; Clear ready bit
-BR      ClockLoop               ; Loop forever
+LW		S4,0(S3)                ; Load current timer control bits
+BEQ		S4,Zero,ClockLoop       ; Loop unless a second has passed
 
-; Returns from function
-;
-; SP is stack pointer
-; RA is return address
-Return:
-LW      RA,0(SP)                ; Load previous return address
-SUBI    SP,SP,4                 ; Pop stack
-RET
+SW      FP,0(SP)                ; Store frame pointer
+ADDI    SP,SP,12                ; Allocate memory for RA and RV
+CALL    IncClock(Zero)          ; Increment clock every second
+
+SW      FP,0(SP)                ; Store frame pointer
+ADDI    SP,SP,12                ; Allocate memory for RA and RV
+ADD     A0,S1,Zero              ; Arg 1
+ADD     A1,S2,Zero              ; Arg 2 
+ADD     A2,S3,Zero              ; Arg 3
+CALL    DisplayClock(Zero)      ; Display clock value
+
+SW      Zero,0(S3)              ; Clear ready bit
+BR      ClockLoop               ; Loop forever
 
 ; Displays the current time on the HEX display
 ;
+; A0 is seconds
+; A1 is minutes
+; A2 is hours
+; S0 is clock value
 ; T0 is seconds
-; T1 is minutes
-; T2 is hours
-; T3 is shifted values
-; T4 is clock value
+; T1 is shifted minutes
+; T2 is shifted hours
 DisplayClock:
-ADDI    SP,SP,4                 ; Push stack
-SW      RA,0(SP)                ; Store return address
-ADD     T3,T1,Zero              ; Set shifted value to minutes
+ADDI    SP,SP,16                ; Push stack
+SW      RA,4(FP)                ; Store return address
+SW      A0,-16(SP)              ; Store arg 1
+SW      A1,-12(SP)              ; Store arg 2
+SW      A2,-8(SP)               ; Store arg 3
+SW      S0,-4(SP)               ; Save S0
+
+SW      FP,0(SP)                ; Store frame pointer
+ADD     FP,SP,Zero              ; Set frame pointer to new record
+ADDI    SP,SP,12                ; Allocate memory for RA and RV
+ADD     A0,A1,Zero              ; Arg 1
 CALL    ByteShift(Zero)         ; Left shift 8 bits
-XOR     T4,T4,T4                ; Set clock value to 0
-OR      T4,T0,T3                ; Clock value holds seconds and minutes
-ADDI    SP,SP,4                 ; Push stack
-SW      T4,0(SP)                ; Store partial result on stack
-ADD     T3,T2,Zero              ; Set shifted value to hours
+ADD     T1,RV,Zero              ; Grab return value
+
+LW      T0,-16(SP)              ; Get seconds from stack
+LW      T2,-8(SP)               ; Get hours from stack
+XOR     S0,S0,S0                ; Set clock value to 0
+OR      S0,T0,T1                ; Clock value holds seconds and minutes
+
+SW      FP,0(SP)                ; Store frame pointer
+ADD     FP,SP,Zero              ; Set frame pointer to new record
+ADDI    SP,SP,12                ; Allocate memory for RA and RV
+ADD     A0,T2,Zero              ; Arg 1
 CALL    ByteShift(Zero)         ; Left shift 8 bits
-CALL    ByteShift(Zero)         ; Left shift 8 more bits
-LW      T4,0(SP)                ; Load partial result from stack
-SUBI    SP,SP,4                 ; Pop stack
-OR      T4,T4,T3                ; Clock value holds seconds, minutes, and hours
-SW      T4,HEX(Zero)            ; Display the clock value on the HEX pins
-BR      Return
+ADD     T2,RV,Zero              ; Grab return value
+
+SW      FP,0(SP)                ; Store frame pointer
+ADD     FP,SP,Zero              ; Set frame pointer to new record
+ADDI    SP,SP,12                ; Allocate memory for RA and RV
+ADD     A0,T2,Zero              ; Arg 1
+CALL    ByteShift(Zero)         ; Left shift 8 bits
+ADD     T2,RV,Zero              ; Grab return value
+
+OR      S0,S0,T2                ; Clock value holds seconds, minutes, and hours
+SW      S0,HEX(Zero)            ; Display the clock value on the HEX pins
+
+DisplayClockRet:
+LW      S0,-4(SP)               ; Restore S0
+LW      RA,4(FP)                ; Load return address
+ADD     SP,FP,Zero              ; Pop stack
+LW      FP,0(FP)                ; Restore old frame pointer
+RET
 
 ; Shifts a value up one byte
 ;
@@ -87,75 +115,88 @@ BR      Return
 ; T3 is unshifted value
 ; T4 is loop counter
 ByteShift:
-ADDI    SP,SP,4                 ; Push stack
-SW      RA,0(SP)                ; Store return address
-ADDI    T4,Zero,8               ; Set loop counter to 8
+SW      RA,4(FP)                ; Store return address
+ADDI    SP,SP,8                 ; Push stack
+SW      A0,-4(SP)               ; Store arg 1
+
+ADDI    T0,Zero,8               ; Set loop counter to 8
 
 ByteShiftLoop:
-ADD     T3,T3,T3                ; Left shift 1 bit
-SUBI    T4,T4,1                 ; Decrement loop counter
-BNE     T4,Zero,ByteShiftLoop   ; Loop 8 times
-BR      Return
+ADD     A0,A0,A0                ; Left shift 1 bit
+SUBI    T0,T0,1                 ; Decrement loop counter
+BNE     T0,Zero,ByteShiftLoop   ; Loop 8 times
+
+ByteShiftRet:
+LW      RA,4(FP)                ; Load return address
+ADD     SP,FP,Zero              ; Pop stack
+LW      FP,0(SP)                ; Restore old frame pointer
+RET
 
 ; Increments clock value
 ;
-; T0 is seconds
-; T1 is minutes
-; T2 is hours
-; T3 is overflow value
-; T4 is current digit
+; S0 is seconds
+; S1 is minutes
+; S2 is hours
+; T0 is overflow value
+; T1 is current digit
 IncClock:
-ADDI    SP,SP,4                 ; Push stack
-SW      RA,0(SP)                ; Store return address
-ADDI    T3,Zero,0x59            ; Set overflow value to 59
-BEQ     T3,T0,IncMin            ; Go to IncMin if there are 59 seconds
-ADDI    T3,Zero,0x9             ; Set overflow value to 9
-ADD     T4,Zero,T0              ; Set current digit to seconds
-ANDI    T4,T4,0xF               ; Mask to get least significant digit
-BEQ     T3,T4,SecOverflow       ; Go to SecOverflow if the least significant digit is 9
-ADDI    T0,T0,1                 ; Otherwise, increment seconds
-BR      Return
+SW      RA,4(FP)                ; Store return address
+
+ADDI    T0,Zero,0x59            ; Set overflow value to 59
+BEQ     T0,S0,IncMin            ; Go to IncMin if there are 59 seconds
+ADDI    T0,Zero,0x9             ; Set overflow value to 9
+ADD     T1,Zero,S0              ; Set current digit to seconds
+ANDI    T1,T1,0xF               ; Mask to get least significant digit
+BEQ     T0,T1,SecOverflow       ; Go to SecOverflow if the least significant digit is 9
+ADDI    S0,S0,1                 ; Otherwise, increment seconds
+BR      IncClockRet
 
 SecOverflow:
-ADDI    T0,T0,0x10              ; Add 10 seconds
-ANDI    T0,T0,0xF0              ; Set least significant digit to 0
-BR      Return
+ADDI    S0,S0,0x10              ; Add 10 seconds
+ANDI    S0,S0,0xF0              ; Set least significant digit to 0
+BR      IncClockRet
 
 IncMin:
-XOR     T0,T0,T0                ; Clear seconds
-ADDI    T3,Zero,0x59            ; Set overflow value to 59
-BEQ     T3,T1,IncHour           ; Go to IncHour if there are 59 minutes
-ADDI    T3,Zero,0x9             ; Set overflow value to 9
-ADD     T4,Zero,T1              ; Set current digit to minutes
-ANDI    T4,T4,0xF               ; Mask to get least significant digit
-BEQ     T3,T4,MinOverflow       ; Go to MinOverflow if the least significant digit is 9
-ADDI    T1,T1,1                 ; Otherwise, increment minutes
-BR      Return
+XOR     S0,S0,S0                ; Clear seconds
+ADDI    T0,Zero,0x59            ; Set overflow value to 59
+BEQ     T0,S1,IncHour           ; Go to IncHour if there are 59 minutes
+ADDI    T0,Zero,0x9             ; Set overflow value to 9
+ADD     T1,Zero,S1              ; Set current digit to minutes
+ANDI    T1,T1,0xF               ; Mask to get least significant digit
+BEQ     T0,T1,MinOverflow       ; Go to MinOverflow if the least significant digit is 9
+ADDI    S1,S1,1                 ; Otherwise, increment minutes
+BR      IncClockRet
 
 MinOverflow:
-ADDI    T1,T1,0x10              ; Add 10 minutes
-ANDI    T1,T1,0xF0              ; Set least significant digit to 0
-BR      Return
+ADDI    S1,S1,0x10              ; Add 10 minutes
+ANDI    S1,S1,0xF0              ; Set least significant digit to 0
+BR      IncClockRet
 
 IncHour:
-XOR     T1,T1,T1                ; Clear minutes
-ADDI    T3,Zero,0x23            ; Set overflow value to 23
-BEQ     T3,T2,Rollover          ; Go to Rollover if there are 23 hours
-ADDI    T3,Zero,0x9             ; Set overflow value to 9
-ADD     T4,Zero,T2              ; Set current digit to hours
-ANDI    T4,T4,0xF               ; Mask to get least significant digit
-BEQ     T3,T4,HourOverflow      ; Go to HourOverflow if the least significant digit is 9
-ADDI    T2,T2,1                 ; Otherwise, increment hours
-BR      Return
+XOR     S1,S1,S1                ; Clear minutes
+ADDI    T0,Zero,0x23            ; Set overflow value to 23
+BEQ     T0,S2,Rollover          ; Go to Rollover if there are 23 hours
+ADDI    T0,Zero,0x9             ; Set overflow value to 9
+ADD     T1,Zero,S2              ; Set current digit to hours
+ANDI    T1,T1,0xF               ; Mask to get least significant digit
+BEQ     T0,T1,HourOverflow      ; Go to HourOverflow if the least significant digit is 9
+ADDI    S2,S2,1                 ; Otherwise, increment hours
+BR      IncClockRet
 
 HourOverflow:
-ADDI    T2,T2,0x10              ; Add 10 hours
-ANDI    T2,T2,0xF0              ; Set least significant digit to 0
-BR      Return
+ADDI    S2,S2,0x10              ; Add 10 hours
+ANDI    S2,S2,0xF0              ; Set least significant digit to 0
+BR      IncClockRet
 
 Rollover:
-XOR     T2,T2,T2                ; Clear hours
-BR      Return
+XOR     S2,S2,S2                ; Clear hours
+BR      IncClockRet
+
+IncClockRet:
+LW      RA,4(FP)                ; Load return address
+ADD     SP,FP,Zero              ; Pop stack
+LW      FP,0(SP)                ; Restore old frame pointer
+RET
 
 ; Static data
 TLimAddr:
