@@ -2,7 +2,9 @@
 .NAME	HEX = 0xFFFFF000
 .NAME	LEDR = 0xFFFFF020
 .NAME	KEY = 0xFFFFF080
+.NAME   KCTRL = 0xFFFFF084
 .NAME	SW = 0xFFFFF090
+.NAME   SCTRL = 0xFFFFF094
 .NAME	TCNT = 0xFFFFF100
 .NAME	TLIM = 0xFFFF0104
 .NAME	TCTRL = 0xFFFF0108
@@ -37,6 +39,8 @@ ADD     A2,S2,Zero              ; Arg 3: hours
 CALL    DisplayClock(Zero)      ; Display clock value
 
 ClockLoop:
+LW      S4,KCTRL(Zero)          ; Load current key control bits
+BNE     S4,Zero,KeyPressed      ; Go to KeyPressed if key is pressed
 LW		S4,0(S3)                ; Load current timer control bits
 BEQ		S4,Zero,ClockLoop       ; Loop unless a second has passed
 
@@ -191,6 +195,13 @@ LW      RA,4(FP)                ; Load return address
 ADD     SP,FP,Zero              ; Pop stack
 LW      FP,0(FP)                ; Restore old frame pointer
 RET
+
+KeyPressed:
+ADDI    T0,Zero,0xDEAD0
+SW      T0,HEX(Zero)
+
+KeyPressedLoop:
+BR      KeyPressedLoop
 
 ; Static data
 TLimAddr:
