@@ -61,7 +61,7 @@ BR      DisplayLoop                 ; Loop forever
 ; 0 if it has
 KeyDown:
 LW      S4,TCNT(Zero)               ; Store initial timer value
-XOR     S5,S5,S5                    ; Zero out the transition elapsed count
+XOR     S5,S5,S5                    ; Zero out the seconds elapsed count
 ADDI    S6,Zero,1                   ; Set has not ticked to 1
 
 KeyDownLoop:
@@ -105,12 +105,8 @@ BR      DisplayMode
 SetMode:
 LW      T0,TestVal(Zero)
 SW      T0,HEX(Zero)
-
-SetModeLoop:
-BR SetModeLoop
-
 LW      S4,TCNT(Zero)               ; Store initial timer value
-XOR     S5,S5,S5                    ; Zero out the transition elapsed count
+XOR     S5,S5,S5                    ; Zero out the seconds elapsed count
 ADDI    S6,Zero,1                   ; Set has not ticked to 1
 
 SetModeLoop:
