@@ -9,6 +9,7 @@
 .NAME	TLIM = 0xFFFF0104
 .NAME	TCTRL = 0xFFFF0108
 .NAME   STACK = 0x8000
+.NAME   TESTVAL = 0xBEEFED
 
 .ORIG 0x100
 
@@ -197,7 +198,7 @@ LW      FP,0(FP)                ; Restore old frame pointer
 RET
 
 KeyPressed:
-ADDI    T0,Zero,0xDEAD0
+LW      T0,TestVal(Zero)
 SW      T0,HEX(Zero)
 
 KeyPressedLoop:
@@ -210,3 +211,5 @@ TCtrlAddr:
 .WORD TCTRL
 StackAddr:
 .WORD STACK
+TestVal:
+.WORD TESTVAL
