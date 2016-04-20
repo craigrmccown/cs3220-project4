@@ -21,7 +21,9 @@ module Project(
 	parameter ADDRHEX = 32'hFFFFF000;
 	parameter ADDRLEDR = 32'hFFFFF020;
 	parameter ADDRKEY = 32'hFFFFF080;
+	parameter ADDRKCTRL = 32'hFFFFF084;
 	parameter ADDRSW = 32'hFFFFF090;
+	parameter ADDRSCTRL = 32'hFFFFF094;
 	parameter ADDRTCNT = 32'hFFFFF100;
 	parameter ADDRTLIM = 32'hFFFF0104;
 	parameter ADDRTCTRL = 32'hFFFF0108;
@@ -450,7 +452,8 @@ module Project(
 		.DBITS(DBITS),
 		.IOBITS(10),
 		.DEVADDR(ADDRSW),
-		.DEBOUNCE(1000)
+		.CTRLADDR(ADDRSCTRL),
+		.DEBOUNCE(1000000000)
 	) devSW (
 		.CLK(clk),
 		.RESET(reset),
@@ -467,6 +470,7 @@ module Project(
 		.DBITS(DBITS),
 		.IOBITS(4),
 		.DEVADDR(ADDRKEY),
+		.CTRLADDR(ADDRKCTRL),
 		.DEBOUNCE(1)
 	) devKEY (
 		.CLK(clk),
