@@ -63,7 +63,7 @@ BR      ClockLoop               ; Loop forever
 ; T0 is seconds
 ; T1 is shifted minutes
 DisplayClock:
-ADDI    SP,SP,20                ; Push stack
+ADDI    SP,SP,16                ; Push stack
 SW      RA,4(FP)                ; Store return address
 SW      A0,-16(SP)              ; Store arg 1
 SW      A1,-12(SP)              ; Store arg 2
@@ -109,7 +109,7 @@ RET
 ; T0 is loop counter
 ByteShift:
 SW      RA,4(FP)                ; Store return address
-ADDI    SP,SP,8                 ; Push stack
+ADDI    SP,SP,4                 ; Push stack
 SW      A0,-4(SP)               ; Store arg 1
 
 ADDI    T0,Zero,8               ; Set loop counter to 8
