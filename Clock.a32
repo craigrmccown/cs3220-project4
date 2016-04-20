@@ -70,10 +70,10 @@ SW      A1,-12(SP)              ; Store arg 2
 SW      A2,-8(SP)               ; Store arg 3
 SW      S0,-4(SP)               ; Save S0
 
+ADD     A0,A1,Zero              ; Arg 1: minutes
 SW      FP,0(SP)                ; Store frame pointer
 ADD     FP,SP,Zero              ; Set frame pointer to new record
 ADDI    SP,SP,12                ; Allocate memory for RA and RV
-ADD     A0,A1,Zero              ; Arg 1: minutes
 CALL    ByteShift(Zero)         ; Left shift 8 bits
 ADD     T1,RV,Zero              ; Grab return value
 
@@ -81,16 +81,16 @@ LW      T0,-16(SP)              ; Get seconds from stack
 XOR     S0,S0,S0                ; Set clock value to 0
 OR      S0,T0,T1                ; Clock value holds seconds and minutes
 
+LW      A0,-8(SP)               ; Arg 1: hours
 SW      FP,0(SP)                ; Store frame pointer
 ADD     FP,SP,Zero              ; Set frame pointer to new record
 ADDI    SP,SP,12                ; Allocate memory for RA and RV
-LW      A0,-8(SP)               ; Arg 1: hours
 CALL    ByteShift(Zero)         ; Left shift 8 bits
 
+ADD     A0,RV,Zero              ; Grab return value and put into arg 1
 SW      FP,0(SP)                ; Store frame pointer
 ADD     FP,SP,Zero              ; Set frame pointer to new record
 ADDI    SP,SP,12                ; Allocate memory for RA and RV
-ADD     A0,RV,Zero              ; Grab return value and put into arg 1
 CALL    ByteShift(Zero)         ; Left shift 8 bits
 
 OR      S0,S0,RV                ; Clock value holds seconds, minutes, and hours
