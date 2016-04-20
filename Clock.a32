@@ -39,11 +39,11 @@ ADD     A1,S1,Zero              ; Arg 2: minutes
 ADD     A2,S2,Zero              ; Arg 3: hours
 CALL    DisplayClock(Zero)      ; Display clock value
 
-ClockLoop:
+DisplayLoop:
 LW      S4,KCTRL(Zero)          ; Load current key control bits
-BNE     S4,Zero,KeyPressed      ; Go to KeyPressed if key is pressed
+BNE     S4,Zero,KeyPressHandler ; Go to KeyPressHandler if key is pressed
 LW		S4,0(S3)                ; Load current timer control bits
-BEQ		S4,Zero,ClockLoop       ; Loop unless a second has passed
+BEQ		S4,Zero,DisplayLoop     ; Loop unless a second has passed
 
 SW      FP,0(SP)                ; Store frame pointer
 ADDI    SP,SP,12                ; Allocate memory for RA and RV
@@ -57,7 +57,7 @@ ADD     A2,S2,Zero              ; Arg 3: hours
 CALL    DisplayClock(Zero)      ; Display clock value
 
 SW      Zero,0(S3)              ; Clear ready bit
-BR      ClockLoop               ; Loop forever
+BR      DisplayLoop             ; Loop forever
 
 ; Displays the current time on the HEX display
 ;
@@ -197,28 +197,27 @@ ADD     SP,FP,Zero              ; Pop stack
 LW      FP,0(FP)                ; Restore old frame pointer
 RET
 
-KeyPressed:
-LW      T0,TestVal(Zero)
-SW      T0,HEX(Zero)
-LW      T1,TCtrlAddr(Zero)
+KeyPressHandler:
+LW      T0,TCtrlAddr(Zero)
 
-KeyPressedLoop:
-LW      T0,0(T1)
-BNE     T0,Zero,KeyCallIncClock
-LW      T0,KCTRL(Zero)
-BEQ     T0,Zero,KeyPressedLoop
+KeyPressDisplayKeys:
+LW      T1,KEY(Zero)
+BEQ     T1,Zero,DisplayLoop
+SW      T1,HEX(Zero)
 
-TestKeyUp:
-LW      T0,KEY(Zero)
-BEQ     T0,Zero,ClockLoop
-BR      KeyPressedLoop
+KeyPressWait:
+LW      T2,0(T0)
+BNE     T2,Zero,KeyPressIncClock
+LW      T2,KCTRL(Zero)
+BEQ     T2,Zero,KeyPressWait
+BR      KeyPressDisplayKeys
 
-KeyCallIncClock:
+KeyPressIncClock:
 SW      FP,0(SP)                ; Store frame pointer
 ADDI    SP,SP,12                ; Allocate memory for RA and RV
 CALL    IncClock(Zero)          ; Increment clock every second
-SW      Zero,0(T1)              ; Clear ready bit
-BR      KeyPressedLoop
+SW      Zero,0(T0)
+BR      KeyPressWait
 
 ; Static data
 TLimAddr:
