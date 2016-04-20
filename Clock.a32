@@ -19,7 +19,7 @@
 ; S1 is minutes
 ; S2 is hours
 ; S3 is device addresses
-; S4 is device values
+; T0 is device values
 Main:
 XOR		Zero,Zero,Zero              ; Set Zero register to 0
 LW      SP,StackAddr(Zero)          ; Initialize stack pointer
@@ -28,8 +28,8 @@ ADDI    S0,Zero,0x50                ; Set seconds to 50
 ADDI    S1,Zero,0x59                ; Set minutes to 59
 ADDI    S2,Zero,0x23                ; Set hours to 23
 LW      S3,TLimAddr(Zero)           ; Load timer limit address
-ADDI	S4,Zero,1000                ; Set timer limit to 1000
-SW		S4,0(S3)                    ; Store 1000 as the timer limit
+ADDI	T0,Zero,1000                ; Set timer limit to 1000
+SW		T0,0(S3)                    ; Store 1000 as the timer limit
 LW      S3,TCtrlAddr(Zero)          ; Load timer control address
 
 SW      FP,0(SP)                    ; Store frame pointer
@@ -39,11 +39,22 @@ ADD     A1,S1,Zero                  ; Arg 2: minutes
 ADD     A2,S2,Zero                  ; Arg 3: hours
 CALL    DisplayClock(Zero)          ; Display clock value
 
-DisplayLoop:
-LW      S4,KCTRL(Zero)              ; Load current key control bits
-BNE     S4,Zero,KeyPressHandler     ; Go to KeyPressHandler if key is pressed
-LW		S4,0(S3)                    ; Load current timer control bits
-BEQ		S4,Zero,DisplayLoop         ; Loop unless a second has passed
+DisplayMode:
+LW      T0,KCTRL(Zero)              ; Load current key control bits
+BNE     T0,Zero,SetTransition       ; Go to KeyPressHandler if key is pressed
+LW		T0,0(S3)                    ; Load current timer control bits
+BEQ		T0,Zero,DisplayMode         ; Loop unless a second has passed
+
+SW      FP,0(SP)                    ; Store frame pointer
+ADDI    SP,SP,12                    ; Allocate memory for RA and RV
+CALL    IncAndDisplay(Zero)         ; Tick clock
+
+SW      Zero,0(S3)                  ; Clear ready bit
+BR      DisplayMode                 ; Loop forever
+
+; Increments clock and displays the incremented value on the HEX pins
+IncAndDisplay:
+SW      RA,4(FP)                    ; Store return address
 
 SW      FP,0(SP)                    ; Store frame pointer
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
@@ -56,10 +67,13 @@ ADD     A1,S1,Zero                  ; Arg 2: minutes
 ADD     A2,S2,Zero                  ; Arg 3: hours
 CALL    DisplayClock(Zero)          ; Display clock value
 
-SW      Zero,0(S3)                  ; Clear ready bit
-BR      DisplayLoop                 ; Loop forever
+IncAndDisplayRet:
+LW      RA,4(FP)                    ; Load return address
+ADD     SP,FP,Zero                  ; Pop stack
+LW      FP,0(FP)                    ; Restore old frame pointer
+RET
 
-; Displays the current time on t    he HEX display
+; Displays the current time on the HEX display
 ;
 ; A0 is seconds
 ; A1 is minutes
@@ -197,24 +211,39 @@ ADD     SP,FP,Zero                  ; Pop stack
 LW      FP,0(FP)                    ; Restore old frame pointer
 RET
 
-KeyPressHandler:
-LW      T0,KEY(Zero)
-BEQ     T0,Zero,DisplayLoop
-SW      T0,HEX(Zero)
+SetTransition:
+LW      S4,TCNT(Zero)               ; Store initial clock value
+XOR     S5,S5,S5                    ; Zero out the transition elapsed count
 
-KeyPressWait:
-LW      T1,0(S3)
-BNE     T1,Zero,KeyPressIncClock    
-LW      T1,KCTRL(Zero)
-BEQ     T1,Zero,KeyPressWait
-BR      KeyPressHandler
+SetTransitionLoop:
+LW      T0,0(S3)                    ; Load timer control value
+BNE     T0,Zero,SetTransitionTick   ; Go to SetTransitionTick if timer reaches limit
+LW      T0,TCNT(Zero)               ; Load current timer count
+BEQ     S4,T0,SetTransitionElapse   ; Go to SetTransitionElapse if timer wraps back around
+LW      T0,KCTRL(Zero)              ; Load key control value
+BEQ     T0,Zero,SetTransitionLoop   ; Loop if key is still down
+LW      T0,KEY(Zero)                ; Load key value
+BEQ     T0,Zero,DisplayMode         ; Go back to display mode if no keys are pressed
+BR      SetTransitionLoop           ; Loop if any keys are still down
 
-KeyPressIncClock:
+SetTransitionTick:
 SW      FP,0(SP)                    ; Store frame pointer
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
-CALL    IncClock(Zero)              ; Increment clock every second
-SW      Zero,0(S3)
-BR      KeyPressWait
+CALL    IncAndDisplay(Zero)         ; Tick clock
+
+BR      SetTransitionLoop           ; Continue with transition period
+
+SetTransitionElapse:
+ADDI    S5,S5,1                     ; Increment elapsed count
+ADDI    T0,Zero,2                   ; Load 2 into T0
+BNE     S5,T0,SetTransitionLoop     ; Loop if less than 2 seconds have elapsed
+
+SetTransitionEnd:
+LW      T0,TestVal(Zero)
+SW      T0,HEX(Zero)
+
+SetTransitionEndLoop:
+BR      SetTransitionEndLoop
 
 ; Static data
 TLimAddr:
