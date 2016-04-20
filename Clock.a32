@@ -200,10 +200,22 @@ RET
 KeyPressed:
 LW      T0,TestVal(Zero)
 SW      T0,HEX(Zero)
+LW      T1,TCtrlAddr(Zero)
 
 KeyPressedLoop:
+LW      T0,0(T1)
+BNE     T0,Zero,KeyCallIncClock
 LW      T0,KCTRL(Zero)
 BEQ     T0,Zero,KeyPressedLoop
+
+KeyCallIncClock:
+SW      FP,0(SP)                ; Store frame pointer
+ADDI    SP,SP,12                ; Allocate memory for RA and RV
+ADD     A0,S0,Zero              ; Arg 1: seconds
+ADD     A1,S1,Zero              ; Arg 2: minutes
+ADD     A2,S2,Zero              ; Arg 3: hours
+CALL    DisplayClock(Zero)      ; Display clock value
+BR      KeyPressedLoop
 
 TestKeyUp:
 LW      T0,KEY(Zero)
