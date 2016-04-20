@@ -64,11 +64,11 @@ BR      ClockLoop               ; Loop forever
 ; T1 is shifted minutes
 ; T2 is shifted hours
 DisplayClock:
-ADDI    SP,SP,20                ; Push stack
+ADDI    SP,SP,16                ; Push stack
 SW      RA,4(FP)                ; Store return address
 SW      A0,-16(SP)              ; Store arg 1
 SW      A1,-12(SP)              ; Store arg 2
-SW      A2,-8(SP)              ; Store arg 3
+SW      A2,-8(SP)               ; Store arg 3
 SW      S0,-4(SP)               ; Save S0
 
 SW      FP,0(SP)                ; Store frame pointer
