@@ -66,8 +66,8 @@ ADDI    S6,Zero,1                   ; Set has not ticked to 1
 
 KeyDownLoop:
 LW      T0,KEY(Zero)                ; Load key value
-ANDI    T0,T0,1
-ADDI    T1,T1,1
+ANDI    T0,T0,1                     ; Get 0th bit from key value
+ADDI    T1,Zero,1                   ; Store a 1 for comparison
 BNE     T0,T1,KeyDownExit           ; Exit if key 0 is not down
 LW      T0,0(S3)                    ; Load timer control value
 BNE     T0,Zero,KeyDownTick         ; Go to KeyDownTick if tick detected
@@ -107,7 +107,13 @@ BR      DisplayMode
 ; S7 is previous key value
 ; S8 is current key value
 SetMode:
-XOR     S7,S7,S7                    ; Zero out previous key value
+LW      S4,TCNT(Zero)               ; Store initial timer value
+XOR     S5,S5,S5                    ; Zero out the seconds elapsed count
+ADDI    S6,Zero,1                   ; Set has not ticked to 1
+LW      S7,KEY(Zero)                ; Set previous value to current key value
+ADD     S8,S7,Zero                  ; Set current key equal to previous key
+ADDI    T0,Zero,4                   ; Load 4
+JAL     T0,SetModeLoop(T0)          ; Jump past first instruction of SetModeLoop
 
 SetModeInit:
 LW      S4,TCNT(Zero)               ; Store initial timer value
@@ -156,42 +162,42 @@ BR      SetModeLoop                 ; Otherwise, loop
 ; A0 is previous key value
 ; A1 is current key value
 SetKey:
-SW      RA,4(FP)
-ADDI    SP,SP,12
-SW      A0,-12(SP)
-SW      A1,-8(SP)
-SW      S3,-4(SP)
+SW      RA,4(FP)                    ; Store return address
+ADDI    SP,SP,12                    ; Push stack
+SW      A0,-12(SP)                  ; Store arg 1
+SW      A1,-8(SP)                   ; Store arg 2
+SW      S3,-4(SP)                   ; Store S0
 
-NOT     S3,A0
-AND     S3,S3,A1
-BEQ     S3,Zero,SetKeyRet
+NOT     S3,A0                       ; Produce the inverse of the previous value
+AND     S3,S3,A1                    ; Get only keys that were not pressed last time
+BEQ     S3,Zero,SetKeyRet           ; Return if no keys are to be pressed
 
 SetKeyDecMin:
-ANDI    T0,S3,1
-BEQ     T0,Zero,SetKeyIncMin
+ANDI    T0,S3,1                     ; Get 0th bit
+BEQ     T0,Zero,SetKeyIncMin        ; Check next key if not pressed
 
 SetKeyIncMin:
-ANDI    T0,S3,2
-BEQ     T0,Zero,SetKeyDecHour
+ANDI    T0,S3,2                     ; Get 1st bit
+BEQ     T0,Zero,SetKeyDecHour       ; Check next key if not pressed
 
 SW      FP,0(SP)                    ; Store frame pointer
-ADD     FP,SP,Zero
+ADD     FP,SP,Zero                  ; Point frame pointer to new record
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
-CALL    IncMin(Zero)
+CALL    IncMin(Zero)                ; Increment minutes
 
 SetKeyDecHour:
-ANDI    T0,S3,4
-BEQ     T0,Zero,SetKeyIncHour
+ANDI    T0,S3,4                     ; Get 2nd bit
+BEQ     T0,Zero,SetKeyIncHour       ; Check next key if not pressed
 
 SetKeyIncHour:
-ANDI    T0,S3,8
-BNE     T0,Zero,SetKeyRet
+ANDI    T0,S3,8                     ; Get 3rd bit
+BNE     T0,Zero,SetKeyRet           ; Return if not pressed
 
-ADDI    T0,Zero,4
+ADDI    T0,Zero,4                   ; Store 4 in T0
 SW      FP,0(SP)                    ; Store frame pointer
-ADD     FP,SP,Zero
+ADD     FP,SP,Zero                  ; Point frame pointer to new record
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
-CALL    IncHour(T0)
+CALL    IncHour(T0)                 ; Increment hour but don't execute the first line
 
 SetKeyRet:
 LW      S3,-4(SP)                   ; Restore S3
