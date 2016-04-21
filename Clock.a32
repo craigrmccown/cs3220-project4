@@ -186,7 +186,7 @@ BEQ     T0,Zero,SetKeyDecHour       ; Check next key if not pressed
 SW      FP,0(SP)                    ; Store frame pointer
 ADD     FP,SP,Zero                  ; Point frame pointer to new record
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
-CALL    IncMin(Zero)                ; Increment minutes
+CALL    IncMinHack(Zero)            ; Increment minutes
 
 SetKeyDecHour:
 ANDI    T0,S3,4                     ; Get 2nd bit
@@ -196,11 +196,10 @@ SetKeyIncHour:
 ANDI    T0,S3,8                     ; Get 3rd bit
 BEQ     T0,Zero,SetKeyRet           ; Return if not pressed
 
-ADDI    T0,Zero,4                   ; Store 4 in T0
 SW      FP,0(SP)                    ; Store frame pointer
 ADD     FP,SP,Zero                  ; Point frame pointer to new record
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
-CALL    IncHour(T0)                 ; Increment hour but don't execute the first line
+CALL    IncHourHack(Zero)           ; Increment hour but don't execute the first line
 
 SetKeyRet:
 LW      S3,-4(SP)                   ; Restore S3
@@ -209,6 +208,14 @@ ADD     SP,FP,Zero                  ; Pop stack
 LW      FP,0(FP)                    ; Restore old frame pointer
 RET
 
+IncMinHack:
+SW      RA,4(FP)                    ; Store return address
+BR      IncMin                      ; Step into IncMin routine
+
+IncHourHack:
+SW      RA,4(FP)                    ; Store return address
+ADDI    T0,Zero,4                   ; Load 4
+JAL     T0,IncHour(T0)              ; Go to IncHour but skip first instruction
 
 ; Increments clock and displays the incremented value on the HEX pins
 IncAndDisplay:
