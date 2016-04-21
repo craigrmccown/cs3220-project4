@@ -202,6 +202,14 @@ ADDI    SP,SP,12                    ; Allocate memory for RA and RV
 CALL    IncHourHack(Zero)           ; Increment hour but don't execute the first line
 
 SetKeyRet:
+SW      FP,0(SP)                    ; Store frame pointer
+ADD     FP,SP,Zero                  ; Point frame pointer to new record
+ADDI    SP,SP,12                    ; Allocate memory for RA and RV
+ADD     A0,S0,Zero                  ; Arg 1: seconds
+ADD     A1,S1,Zero                  ; Arg 2: minutes
+ADD     A2,S2,Zero                  ; Arg 3: hours
+CALL    DisplayClock(Zero)          ; Increment minutes
+
 LW      S3,-4(SP)                   ; Restore S3
 LW      RA,4(FP)                    ; Load return address
 ADD     SP,FP,Zero                  ; Pop stack
