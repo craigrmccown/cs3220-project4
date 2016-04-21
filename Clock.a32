@@ -165,13 +165,11 @@ BR      SetModeLoop                 ; Otherwise, loop
 ; A1 is current key value
 SetKey:
 SW      RA,4(FP)                    ; Store return address
-ADDI    SP,SP,12                    ; Push stack
-SW      A0,-12(SP)                  ; Store arg 1
-SW      A1,-8(SP)                   ; Store arg 2
-SW      S3,-4(SP)                   ; Store S0
+ADDI    SP,SP,8                     ; Push stack
+SW      A0,-8(SP)                   ; Store arg 1
+SW      S3,-4(SP)                   ; Store S3
 
-NOT     S3,A0                       ; Produce the inverse of the previous value
-AND     S3,S3,A1                    ; Get only keys that were not pressed last time
+ADD     S3,A0,Zero                  ; Load arg
 BEQ     S3,Zero,SetKeyRet           ; Return if no keys are to be pressed
 
 SetKeyDecMin:
