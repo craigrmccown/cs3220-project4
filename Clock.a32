@@ -33,6 +33,7 @@ SW		T0,0(S3)                    ; Store 1000 as the timer limit
 LW      S3,TCtrlAddr(Zero)          ; Load timer control address
 
 DisplayMode:
+SW      Zero,LEDR(Zero)
 SW      FP,0(SP)                    ; Store frame pointer
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
 ADD     A0,S0,Zero                  ; Arg 1: seconds
@@ -108,6 +109,8 @@ BR      DisplayMode
 ; S8 is current key value
 ; S9 is changed keys
 SetMode:
+ADDI    T0,Zero,0xFFFF
+SW      T0,LEDR(Zero)
 LW      S4,TCNT(Zero)               ; Store initial timer value
 XOR     S5,S5,S5                    ; Zero out the seconds elapsed count
 ADDI    S6,Zero,1                   ; Set has not ticked to 1
