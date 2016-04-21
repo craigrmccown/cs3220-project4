@@ -179,6 +179,11 @@ SetKeyDecMin:
 ANDI    T0,S3,1                     ; Get 0th bit
 BEQ     T0,Zero,SetKeyIncMin        ; Check next key if not pressed
 
+SW      FP,0(SP)                    ; Store frame pointer
+ADD     FP,SP,Zero                  ; Point frame pointer to new record
+ADDI    SP,SP,12                    ; Allocate memory for RA and RV
+CALL    DecMin(Zero)                ; Decrement minutes
+
 SetKeyIncMin:
 ANDI    T0,S3,2                     ; Get 1st bit
 BEQ     T0,Zero,SetKeyDecHour       ; Check next key if not pressed
@@ -191,6 +196,11 @@ CALL    IncMinHack(Zero)            ; Increment minutes
 SetKeyDecHour:
 ANDI    T0,S3,4                     ; Get 2nd bit
 BEQ     T0,Zero,SetKeyIncHour       ; Check next key if not pressed
+
+SW      FP,0(SP)                    ; Store frame pointer
+ADD     FP,SP,Zero                  ; Point frame pointer to new record
+ADDI    SP,SP,12                    ; Allocate memory for RA and RV
+CALL    DecHour(Zero)               ; Decrement hours
 
 SetKeyIncHour:
 ANDI    T0,S3,8                     ; Get 3rd bit
@@ -215,15 +225,6 @@ LW      RA,4(FP)                    ; Load return address
 ADD     SP,FP,Zero                  ; Pop stack
 LW      FP,0(FP)                    ; Restore old frame pointer
 RET
-
-IncMinHack:
-SW      RA,4(FP)                    ; Store return address
-BR      IncMin                      ; Step into IncMin routine
-
-IncHourHack:
-SW      RA,4(FP)                    ; Store return address
-ADDI    T0,Zero,4                   ; Load 4
-JAL     T0,IncHour(T0)              ; Go to IncHour but skip first instruction
 
 ; Increments clock and displays the incremented value on the HEX pins
 IncAndDisplay:
@@ -385,6 +386,90 @@ LW      RA,4(FP)                    ; Load return address
 ADD     SP,FP,Zero                  ; Pop stack
 LW      FP,0(FP)                    ; Restore old frame pointer
 RET
+
+; Decrements minutes
+;
+; S0 is seconds
+; S1 is minutes
+; S2 is hours
+DecMin:
+SW      RA,4(FP)
+XOR     S0,S0,S0
+BEQ     S1,Zero,DecMinZero
+ADD     T0,Zero,S1
+ANDI    T0,T0,0xF
+BEQ     T0,Zero,MinUnderflow
+SUBI    S1,S1,1
+BR      DecMinRet
+
+DecMinZero:
+ADDI    S1,Zero,0x59
+SW      FP,0(SP)
+ADD     FP,SP,Zero
+ADDI    SP,SP,12
+CALL    DecHour(Zero)
+BR      DecMinRet
+
+MinUnderflow:
+SUBI    S1,S1,16
+ANDI    S1,S1,0xF0
+ORI     S1,S1,0xF9
+BR      DecMinRet
+
+DecMinRet:
+LW      RA,4(FP)
+ADD     SP,FP,Zero
+LW      FP,0(FP)
+RET
+
+; Decrements hours
+;
+; S0 is seconds
+; S1 is minutes
+; S2 is hours
+DecHour:
+SW      RA,4(FP)
+BEQ     S2,Zero,DecHourZero
+ADD     T0,Zero,S2
+ANDI    T0,T0,0xF
+BEQ     T0,Zero,HourUnderflow
+SUBI    S2,S2,1
+BR      DecHourRet
+
+DecHourZero:
+ADDI    S2,Zero,0x23
+BR      DecHourRet
+
+HourUnderflow:
+SUBI    S2,S2,16
+ANDI    S2,S2,0xF0
+ORI     S2,S2,0xF9
+BR      DecHourRet
+
+DecHourRet:
+LW      RA,4(FP)
+ADD     SP,FP,Zero
+LW      FP,0(FP)
+RET
+
+; Increments minutes
+;
+; S0 is seconds
+; S1 is minutes
+; S2 is hours
+IncMinHack:
+SW      RA,4(FP)                    ; Store return address
+BR      IncMin                      ; Step into IncMin routine
+
+; Increments hours
+;
+; S0 is seconds
+; S1 is minutes
+; S2 is hours
+IncHourHack:
+SW      RA,4(FP)                    ; Store return address
+ADDI    T0,Zero,4                   ; Load 4
+JAL     T0,IncHour(T0)              ; Go to IncHour but skip first instruction
 
 ; Static data
 TLimAddr:
