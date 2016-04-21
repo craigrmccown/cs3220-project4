@@ -106,6 +106,7 @@ BR      DisplayMode
 ; 0 if it has
 ; S7 is previous key value
 ; S8 is current key value
+; S9 is changed keys
 SetMode:
 LW      S4,TCNT(Zero)               ; Store initial timer value
 XOR     S5,S5,S5                    ; Zero out the seconds elapsed count
@@ -122,15 +123,16 @@ ADDI    S6,Zero,1                   ; Set has not ticked to 1
 
 SetModeLoop:
 LW      S8,KEY(Zero)                ; Load current key value
+NOT     S9,S7                       ; Inverse previous value
+AND     S9,S9,S8                    ; Compute keys that were just pressed
 
 SW      FP,0(SP)                    ; Store frame pointer
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
-ADD     A0,S7,Zero                  ; Arg 1
-ADD     A1,S8,Zero                  ; Arg 2
+ADD     A0,S9,Zero                  ; Arg 1: keys just pressed
 CALL    SetKey(Zero)                ; Handle key presses
 
 ADD     S7,S8,Zero                  ; Save previous key value
-BNE     S8,Zero,SetModeInit         ; Reinit values if there are keys pressed
+BNE     S9,Zero,SetModeInit         ; Reinit values if there were keys pressed
 LW      T0,0(S3)                    ; Load timer control address
 BNE     T0,Zero,SetModeTick         ; Go to SetModeTick if a tick is detected
 
@@ -148,7 +150,7 @@ CALL    IncAndDisplay(Zero)         ; Tick clock
 
 SW      Zero,0(S3)                  ; Set ready bit to 0
 XOR     S6,S6,S6                    ; Set has not ticked to 0
-BR      SetModeTime
+BR      SetModeTime                 ; Loop
 
 SetModeElapse:
 ADDI    S5,S5,1                     ; Increment elapsed count
