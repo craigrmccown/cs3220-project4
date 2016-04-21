@@ -194,7 +194,7 @@ BEQ     T0,Zero,SetKeyIncHour       ; Check next key if not pressed
 
 SetKeyIncHour:
 ANDI    T0,S3,8                     ; Get 3rd bit
-BNE     T0,Zero,SetKeyRet           ; Return if not pressed
+BEQ     T0,Zero,SetKeyRet           ; Return if not pressed
 
 ADDI    T0,Zero,4                   ; Store 4 in T0
 SW      FP,0(SP)                    ; Store frame pointer
