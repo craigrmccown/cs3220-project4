@@ -413,7 +413,7 @@ BR      DecMinRet
 MinUnderflow:
 SUBI    S1,S1,16
 ANDI    S1,S1,0xF0
-ORI     S1,S1,0xF9
+ORI     S1,S1,0x9
 BR      DecMinRet
 
 DecMinRet:
@@ -443,7 +443,7 @@ BR      DecHourRet
 HourUnderflow:
 SUBI    S2,S2,16
 ANDI    S2,S2,0xF0
-ORI     S2,S2,0xF9
+ORI     S2,S2,0x9
 BR      DecHourRet
 
 DecHourRet:
