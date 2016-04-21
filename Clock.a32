@@ -132,11 +132,11 @@ ADD     A0,S9,Zero                  ; Arg 1: keys just pressed
 CALL    SetKey(Zero)                ; Handle key presses
 
 ADD     S7,S8,Zero                  ; Save previous key value
-BNE     S9,Zero,SetModeInit         ; Reinit values if there were keys pressed
 LW      T0,0(S3)                    ; Load timer control address
 BNE     T0,Zero,SetModeTick         ; Go to SetModeTick if a tick is detected
 
 SetModeTime:
+BNE     S9,Zero,SetModeInit         ; Reinit values if there were keys pressed
 LW      T0,TCNT(Zero)               ; Load timer count
 SUB     T1,T0,S4                    ; Compare to initial timer value
 OR      T1,T1,S6                    ; Make sure there has been a tick
