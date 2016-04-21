@@ -66,7 +66,9 @@ ADDI    S6,Zero,1                   ; Set has not ticked to 1
 
 KeyDownLoop:
 LW      T0,KEY(Zero)                ; Load key value
-BEQ     T0,Zero,KeyDownExit         ; Exit if no keys are down
+ANDI    T0,T0,1
+ADDI    T1,T1,1
+BNE     T0,T1,KeyDownExit           ; Exit if key 0 is not down
 LW      T0,0(S3)                    ; Load timer control value
 BNE     T0,Zero,KeyDownTick         ; Go to KeyDownTick if tick detected
 
@@ -102,30 +104,41 @@ BR      DisplayMode
 ; S5 is seconds elapsed while no key is held down
 ; S6 is 1 if the timer has not ticked while the current second is being timed and
 ; 0 if it has
+; S7 is previous key value
+; S8 is current key value
 SetMode:
-LW      T0,TestVal(Zero)
-SW      T0,HEX(Zero)
+XOR     S7,S7,S7                    ; Zero out previous key value
+
+SetModeInit:
 LW      S4,TCNT(Zero)               ; Store initial timer value
 XOR     S5,S5,S5                    ; Zero out the seconds elapsed count
 ADDI    S6,Zero,1                   ; Set has not ticked to 1
 
 SetModeLoop:
-LW      T0,KEY(Zero)
-BNE     T0,Zero,SetMode
-LW      T0,0(S3)
-BNE     T0,Zero,SetModeTick
+LW      S8,KEY(Zero)                ; Load current key value
+
+SW      FP,0(SP)                    ; Store frame pointer
+ADDI    SP,SP,12                    ; Allocate memory for RA and RV
+ADD     A0,S7,Zero                  ; Arg 1
+ADD     A1,S8,Zero                  ; Arg 2
+CALL    SetKey(Zero)                ; Handle key presses
+
+ADD     S7,S8,Zero                  ; Save previous key value
+BNE     S8,Zero,SetModeInit         ; Reinit values if there are keys pressed
+LW      T0,0(S3)                    ; Load timer control address
+BNE     T0,Zero,SetModeTick         ; Go to SetModeTick if a tick is detected
 
 SetModeTime:
-LW      T0,TCNT(Zero)
-SUB     T1,T0,S4
-OR      T1,T1,S6
-BEQ     T1,Zero,SetModeElapse
-BR      SetModeLoop
+LW      T0,TCNT(Zero)               ; Load timer count
+SUB     T1,T0,S4                    ; Compare to initial timer value
+OR      T1,T1,S6                    ; Make sure there has been a tick
+BEQ     T1,Zero,SetModeElapse       ; Go to SetModeElapse if a second has passed without key presses
+BR      SetModeLoop                 ; Loop
 
 SetModeTick:
 SW      FP,0(SP)                    ; Store frame pointer
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
-CALL    IncClock(Zero)              ; Tick clock
+CALL    IncAndDisplay(Zero)         ; Tick clock
 
 SW      Zero,0(S3)                  ; Set ready bit to 0
 XOR     S6,S6,S6                    ; Set has not ticked to 0
@@ -137,6 +150,56 @@ ADDI    S6,Zero,1                   ; Set has not ticked to 1
 ADDI    T0,Zero,5                   ; Load 5 into T0
 BEQ     S5,T0,DisplayMode           ; Switch to display mode if 5 seconds have elapsed
 BR      SetModeLoop                 ; Otherwise, loop
+
+; Increments clock based on key values
+;
+; A0 is previous key value
+; A1 is current key value
+SetKey:
+SW      RA,4(FP)
+ADDI    SP,SP,12
+SW      A0,-12(SP)
+SW      A1,-8(SP)
+SW      S3,-4(SP)
+
+NOT     S3,A0
+AND     S3,S3,A1
+BEQ     S3,Zero,SetKeyRet
+
+SetKeyDecMin:
+ANDI    T0,S3,1
+BEQ     T0,Zero,SetKeyIncMin
+
+SetKeyIncMin:
+ANDI    T0,S3,2
+BEQ     T0,Zero,SetKeyDecHour
+
+SW      FP,0(SP)                    ; Store frame pointer
+ADD     FP,SP,Zero
+ADDI    SP,SP,12                    ; Allocate memory for RA and RV
+CALL    IncMin(Zero)
+
+SetKeyDecHour:
+ANDI    T0,S3,4
+BEQ     T0,Zero,SetKeyIncHour
+
+SetKeyIncHour:
+ANDI    T0,S3,8
+BNE     T0,Zero,SetKeyRet
+
+ADDI    T0,Zero,4
+SW      FP,0(SP)                    ; Store frame pointer
+ADD     FP,SP,Zero
+ADDI    SP,SP,12                    ; Allocate memory for RA and RV
+CALL    IncHour(T0)
+
+SetKeyRet:
+LW      S3,-4(SP)                   ; Restore S3
+LW      RA,4(FP)                    ; Load return address
+ADD     SP,FP,Zero                  ; Pop stack
+LW      FP,0(FP)                    ; Restore old frame pointer
+RET
+
 
 ; Increments clock and displays the incremented value on the HEX pins
 IncAndDisplay:
