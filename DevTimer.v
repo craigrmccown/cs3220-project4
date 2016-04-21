@@ -33,40 +33,30 @@ module DevTimer(CLK, RESET, ABUS, WE, DBUS_IN, DBUS_OUT);
 			ready <= 1'b0;
 			overflow <= 1'b0;
 		end else begin
-			if (writeLimit) begin
-				limit <= DBUS_IN;
-				count <= 0;
+			if (ticks == (MSTICKS - 1)) begin
 				ticks <= 0;
-			end else if (writeCount) begin
-				count <= DBUS_IN;
-				ticks <= 0;
-			end else begin
-				if (ticks == (MSTICKS - 1)) begin
-					ticks <= 0;
-					
-					if (count == (limit - 1) && limit != 0) begin
-						count <= 0;
-						ready <= 1'b1;
-						
-						if (ready)
-							overflow <= 1'b1;
-					end else begin
-						count <= count + 1;
-					end
-				end else begin
-					ticks <= ticks + 1;
-				end
 				
-				if (writeCtrl) begin
-					if (!DBUS_IN[0])
-						ready <= 1'b0;
-						
-					if (!DBUS_IN[1])
-						overflow <= 1'b0;
-				end else if (readCount) begin
+				if (count == (limit - 1) && limit != 0) begin
+					count <= 0;
+					ready <= 1'b1;
+					
+					if (ready)
+						overflow <= 1'b1;
+				end else
+					count <= count + 1;
+			end else
+				ticks <= ticks + 1;
+					
+			if (writeLimit)
+				limit <= DBUS_IN;
+			else if (writeCount)
+				count <= DBUS_IN;
+			else if (writeCtrl) begin
+				if (!DBUS_IN[0])
 					ready <= 1'b0;
+						
+				if (!DBUS_IN[1])
 					overflow <= 1'b0;
-				end
 			end
 		end
 	end

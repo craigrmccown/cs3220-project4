@@ -86,33 +86,6 @@ module Project(
 	);
 	
 	wire reset = !locked;
-		/*
-	reg clk;
-	reg reset;
-	reg hasticked;
-	reg [31 : 0] clk_cnt;
-	
-	initial begin
-		reset <= 1'b1;
-		hasticked <= 1'b0;
-		clk_cnt <= 32'b0;
-		clk <= 1'b0;
-	end
-	
-	always @(posedge _clk) begin
-		if (clk_cnt == 32'd30000000) begin
-			clk_cnt <= 32'b0;
-			clk <= 1'b1;
-			hasticked <= 1'b1;
-		end else begin
-			if (hasticked)
-				reset <= 1'b0;
-
-			clk_cnt <= clk_cnt + 1;
-			clk <= 1'b0;
-		end
-	end
-	*/
 
 	// The PC register and update logic
 	reg [(DBITS - 1) : 0] PC;
@@ -458,7 +431,9 @@ module Project(
 		.CLK(clk),
 		.RESET(reset),
 		.ABUS(abus),
+		.DBUS_IN(dbus),
 		.DBUS_OUT(dbusSW),
+		.WE(we),
 		.IN(SW)
 	);
 	
@@ -476,7 +451,9 @@ module Project(
 		.CLK(clk),
 		.RESET(reset),
 		.ABUS(abus),
+		.DBUS_IN(dbus),
 		.DBUS_OUT(dbusKEY),
+		.WE(we),
 		.IN(~KEY)
 	);
 	
