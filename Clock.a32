@@ -144,8 +144,8 @@ LW      T0,TCNT(Zero)               ; Load timer count
 
 SW      FP,0(SP)                    ; Store frame pointer
 ADDI    SP,SP,12                    ; Allocate memory for RA and RV
-ADD     A0,S10,Zero                 ; Arg 1: keys just pressed
-ADD     A1,T0,Zero                  ; Arg 1: keys just pressed
+ADD     A0,S10,Zero                 ; Arg 1: original timer value
+ADD     A1,T0,Zero                  ; Arg 2: current timer value
 CALL    BlinkLed(Zero)              ; Flash LEDR
 
 SUB     T1,T0,S4                    ; Compare to initial timer value
@@ -179,13 +179,14 @@ ADDI    T0,Zero,500
 BLT     A0,T0,BlinkLedLt
 
 BlinkLedGte:
-SUBI    T0,T0,500
+SUBI    A0,A0,500
+BR      BlinkLedOnOff
 
 BlinkLedLt:
-ADDI    T0,T0,500
+ADDI    A0,A0,500
 
 BlinkLedOnOff:
-BEQ     A1,T0,BlinkLedOff
+BEQ     A1,A0,BlinkLedOff
 
 BlinkLedOn:
 ADDI    T0,Zero,0xFFFF
